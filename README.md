@@ -1,6 +1,6 @@
 # Agent Hub — Agent 中台
 
-企业级 Agent 编排中台，提供 Agent 运行时、LLM 网关、Tool 注册、RBAC 权限体系、Text2SQL 自然语言查数、Workflow 编排等核心能力。一期已交付现金流预测 Agent（CashflowAgent），支持对话式交互、SSE 流式输出、报表导出与可视化看板。
+企业级 Agent 编排中台，提供 Agent 运行时、LLM 网关、Tool 注册、RBAC 权限体系、Text2SQL 自然语言查数、Workflow 编排等核心能力。支持对话式交互、SSE 流式输出、报表导出与可视化看板。
 
 ---
 
