@@ -1,0 +1,765 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { useAuth } from "../../auth.tsx";
+
+type 管理页签 = "人员管理" | "组织管理" | "菜单管理" | "资源管理" | "权限管理";
+type 权限管理子页 = "角色管理" | "菜单授权" | "资源授权";
+type 数据范围 = "SELF" | "DEPT" | "DEPT_AND_SUB" | "ALL";
+
+type 接口包裹<T> = {
+  success: boolean;
+  message: string;
+  data: T;
+};
+
+type 行数据 = Record<string, unknown>;
+
+type 菜单节点 = {
+  id: string;
+  menuName?: string;
+  path?: string;
+  component?: string;
+  permissionCode?: string;
+  sortOrder?: number;
+  children?: 菜单节点[];
+};
+
+type 弹框字段 =
+  | { name: string; label: string; type: "text"; placeholder?: string }
+  | { name: string; label: string; type: "select"; options: Array<{ value: string; label: string }> }
+  | { name: string; label: string; type: "checkboxGroup"; options: Array<{ value: string; label: string }> };
+
+type 弹框状态 =
+  | null
+  | {
+      type: "confirm";
+      title: string;
+      description: string;
+      confirmText?: string;
+      danger?: boolean;
+      onConfirm: () => Promise<void> | void;
+    }
+  | {
+      type: "form";
+      title: string;
+      description?: string;
+      fields: 弹框字段[];
+      initialValues: Record<string, string | string[]>;
+      confirmText?: string;
+      onSubmit: (values: Record<string, string | string[]>) => Promise<void> | void;
+    };
+
+type AdminRbacSection = "users" | "departments" | "menus" | "resources" | "roles";
+
+export function AdminRbacConsole({ initialSection = "users" }: { initialSection?: AdminRbacSection }) {
+  const { accessToken, can } = useAuth();
+
+  const [activeTab, setActiveTab] = useState<管理页签>("人员管理");
+  const [activeRoleSubView, setActiveRoleSubView] = useState<权限管理子页>("角色管理");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [dialog, setDialog] = useState<弹框状态>(null);
+
+  const [users, setUsers] = useState<行数据[]>([]);
+  const [departments, setDepartments] = useState<行数据[]>([]);
+  const [menus, setMenus] = useState<行数据[]>([]);
+  const [menuTree, setMenuTree] = useState<菜单节点[]>([]);
+  const [resources, setResources] = useState<行数据[]>([]);
+  const [roles, setRoles] = useState<行数据[]>([]);
+
+  const [selectedRoleId, setSelectedRoleId] = useState("");
+  const [selectedMenuIds, setSelectedMenuIds] = useState<string[]>([]);
+  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
+  const [expandedMenuIds, setExpandedMenuIds] = useState<Record<string, boolean>>({});
+
+  const [userForm, setUserForm] = useState({ username: "", nickname: "", departmentId: "", email: "", phone: "", password: "" });
+  const [departmentForm, setDepartmentForm] = useState({ parentId: "0", deptCode: "", deptName: "", leader: "", phone: "", sortOrder: 0, remark: "" });
+  const [menuForm, setMenuForm] = useState({ parentId: "0", menuName: "", path: "", component: "", icon: "", permissionCode: "", sortOrder: 0, remark: "" });
+  const [resourceForm, setResourceForm] = useState({ menuId: "", resourceName: "", resourceCode: "", method: "GET", path: "", resourceType: "API", matchType: "EXACT", priority: 0, remark: "" });
+  const [roleForm, setRoleForm] = useState({ roleCode: "", roleName: "", roleType: "NORMAL", sortOrder: 0, remark: "" });
+
+  const authedFetch = async <T,>(url: string, init?: RequestInit): Promise<T> => {
+    const headers = new Headers(init?.headers);
+    headers.set("Content-Type", "application/json");
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+    const resp = await fetch(url, { ...init, headers });
+    const payload = (await resp.json()) as 接口包裹<T>;
+    if (!resp.ok || !payload.success) throw new Error(payload?.message || `HTTP ${resp.status}`);
+    return payload.data;
+  };
+
+  const canViewAdmin = useMemo(() => {
+    return can("system:user:view") || can("system:dept:view") || can("system:menu:view") || can("system:resource:view") || can("system:role:view");
+  }, [can]);
+
+  const loadCore = async () => {
+    setBusy(true);
+    try {
+      const [u, d, m, mt, r, roleRows] = await Promise.all([
+        authedFetch<行数据[]>("/api/rbac/users"),
+        authedFetch<行数据[]>("/api/rbac/departments"),
+        authedFetch<行数据[]>("/api/rbac/menus"),
+        authedFetch<菜单节点[]>("/api/rbac/menus/tree"),
+        authedFetch<行数据[]>("/api/rbac/resources"),
+        authedFetch<行数据[]>("/api/rbac/roles"),
+      ]);
+      setUsers(u);
+      setDepartments(d);
+      setMenus(m);
+      setMenuTree(mt);
+      setResources(r);
+      setRoles(roleRows);
+      if (!selectedRoleId && roleRows.length > 0) setSelectedRoleId(String(roleRows[0].id));
+      setExpandedMenuIds(buildExpandState(mt));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const loadRoleBindings = async (roleId: string) => {
+    const [menuIds, resourceIds] = await Promise.all([
+      authedFetch<string[]>(`/api/rbac/roles/${roleId}/menus`),
+      authedFetch<string[]>(`/api/rbac/roles/${roleId}/resources`),
+    ]);
+    setSelectedMenuIds(menuIds);
+    setSelectedResourceIds(resourceIds);
+  };
+
+  useEffect(() => {
+    if (!canViewAdmin) return;
+    void loadCore().catch((error) => setMessage(error instanceof Error ? error.message : "加载失败"));
+  }, [canViewAdmin]);
+
+  useEffect(() => {
+    if (activeTab !== "权限管理" || activeRoleSubView === "角色管理" || !selectedRoleId) return;
+    void loadRoleBindings(selectedRoleId).catch((error) => setMessage(error instanceof Error ? error.message : "角色授权加载失败"));
+  }, [activeTab, activeRoleSubView, selectedRoleId]);
+
+  useEffect(() => {
+    if (initialSection === "users") setActiveTab("人员管理");
+    if (initialSection === "departments") setActiveTab("组织管理");
+    if (initialSection === "menus") setActiveTab("菜单管理");
+    if (initialSection === "resources") setActiveTab("资源管理");
+    if (initialSection === "roles") {
+      setActiveTab("权限管理");
+      setActiveRoleSubView("角色管理");
+    }
+  }, [initialSection]);
+
+  const departmentOptions = departments.map((dept) => ({ id: String(dept.id), name: String(dept.deptName || dept.id) }));
+
+  const onDelete = async (module: "users" | "departments" | "menus" | "resources" | "roles", id: string) => {
+    setDialog({
+      type: "confirm",
+      title: "确认删除",
+      description: `删除后该记录会从当前管理视图移除。记录ID：${id}`,
+      confirmText: "删除",
+      danger: true,
+      onConfirm: async () => {
+        await authedFetch(`/api/rbac/${module}/${id}`, { method: "DELETE" });
+        await loadCore();
+        setMessage("删除成功");
+      },
+    });
+  };
+
+  const saveUserRoles = async (userId: string) => {
+    const current = await authedFetch<string[]>(`/api/rbac/users/${userId}/roles`);
+    setDialog({
+      type: "form",
+      title: "分配用户角色",
+      description: "为当前人员选择角色，并设置该人员的数据范围。",
+      confirmText: "保存角色",
+      initialValues: { roleIds: current, dataScope: "SELF" },
+      fields: [
+        {
+          name: "roleIds",
+          label: "角色",
+          type: "checkboxGroup",
+          options: roles.map((role) => ({
+            value: String(role.id),
+            label: `${String(role.roleName || role.roleCode || role.id)}（${String(role.roleCode || role.id)}）`,
+          })),
+        },
+        {
+          name: "dataScope",
+          label: "数据范围",
+          type: "select",
+          options: [
+            { value: "SELF", label: "仅本人" },
+            { value: "DEPT", label: "本组织" },
+            { value: "DEPT_AND_SUB", label: "本组织及下级" },
+            { value: "ALL", label: "全部数据" },
+          ],
+        },
+      ],
+      onSubmit: async (values) => {
+        const roleIds = Array.isArray(values.roleIds) ? values.roleIds : [];
+        const dataScope = normalizeDataScope(String(values.dataScope || "SELF"));
+        await authedFetch(`/api/rbac/users/${userId}/roles?dataScope=${dataScope}`, {
+          method: "POST",
+          body: JSON.stringify(roleIds),
+        });
+        setMessage("用户角色已更新");
+      },
+    });
+  };
+
+  const openSingleFieldDialog = (options: {
+    title: string;
+    label: string;
+    fieldName: string;
+    initialValue?: string;
+    onSubmit: (value: string) => Promise<void>;
+  }) => {
+    setDialog({
+      type: "form",
+      title: options.title,
+      initialValues: { [options.fieldName]: options.initialValue || "" },
+      confirmText: "保存",
+      fields: [{ name: options.fieldName, label: options.label, type: "text" }],
+      onSubmit: async (values) => {
+        await options.onSubmit(String(values[options.fieldName] || ""));
+      },
+    });
+  };
+
+  const saveRoleBindings = async () => {
+    if (!selectedRoleId) {
+      setMessage("请先选择角色");
+      return;
+    }
+    await Promise.all([
+      authedFetch(`/api/rbac/roles/${selectedRoleId}/menus`, { method: "POST", body: JSON.stringify(selectedMenuIds) }),
+      authedFetch(`/api/rbac/roles/${selectedRoleId}/resources`, { method: "POST", body: JSON.stringify(selectedResourceIds) }),
+    ]);
+    setMessage("角色授权已保存");
+  };
+
+  const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((item) => item !== id) : [...list, id]);
+
+  if (!canViewAdmin) {
+    return <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">当前账号没有访问系统管理的权限。</div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-3xl border border-white/60 bg-gradient-to-r from-white to-blue-50 p-6 shadow-[0_12px_40px_-20px_rgba(30,64,175,.45)]">
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900">系统管理台</h2>
+        <p className="mt-1 text-sm text-slate-600">统一管理人员、组织、菜单、资源与权限。</p>
+      </div>
+
+      <section className="space-y-4">
+          <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white/85 px-4 py-3 shadow-sm backdrop-blur">
+            <div className="text-sm font-medium text-slate-700">当前模块：{activeTab}{activeTab === "权限管理" ? ` / ${activeRoleSubView}` : ""}</div>
+            <button className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700 hover:shadow-sm" onClick={() => void loadCore()}>
+              刷新数据
+            </button>
+          </div>
+          {message ? <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">{message}</div> : null}
+          {busy ? <div className="text-sm text-slate-500">正在加载...</div> : null}
+
+      {activeTab === "人员管理" && (
+        <Card title="人员管理">
+          <div className="mt-3 grid gap-2 md:grid-cols-7">
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="用户名" value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="昵称" value={userForm.nickname} onChange={(e) => setUserForm({ ...userForm, nickname: e.target.value })} />
+            <select className="rounded-lg border px-2 py-2 text-sm" value={userForm.departmentId} onChange={(e) => setUserForm({ ...userForm, departmentId: e.target.value })}>
+              <option value="">所属组织</option>
+              {departmentOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="邮箱" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="手机号" value={userForm.phone} onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="密码" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} />
+            <button className="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" onClick={() => void authedFetch("/api/rbac/users", { method: "POST", body: JSON.stringify(userForm) }).then(loadCore)}>
+              新增用户
+            </button>
+          </div>
+          <SimpleTable
+            rows={users}
+            columns={["username", "nickname", "departmentName", "email", "phone", "dataScope"]}
+            onDelete={(id) => void onDelete("users", id)}
+            onEdit={async (id) => {
+              openSingleFieldDialog({
+                title: "编辑人员",
+                label: "昵称",
+                fieldName: "nickname",
+                onSubmit: async (nickname) => {
+                  await authedFetch(`/api/rbac/users/${id}`, { method: "PUT", body: JSON.stringify({ nickname }) });
+                  await loadCore();
+                },
+              });
+            }}
+            extraAction={(row) => <button className="rounded border border-slate-300 px-2 py-1 text-xs" onClick={() => void saveUserRoles(String(row.id))}>分配角色</button>}
+          />
+        </Card>
+      )}
+
+      {activeTab === "组织管理" && (
+        <Card title="组织管理">
+          <div className="mt-3 grid gap-2 md:grid-cols-7">
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="父级ID（根节点填0）" value={departmentForm.parentId} onChange={(e) => setDepartmentForm({ ...departmentForm, parentId: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="组织编码" value={departmentForm.deptCode} onChange={(e) => setDepartmentForm({ ...departmentForm, deptCode: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="组织名称" value={departmentForm.deptName} onChange={(e) => setDepartmentForm({ ...departmentForm, deptName: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="负责人" value={departmentForm.leader} onChange={(e) => setDepartmentForm({ ...departmentForm, leader: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="电话" value={departmentForm.phone} onChange={(e) => setDepartmentForm({ ...departmentForm, phone: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" type="number" placeholder="排序" value={departmentForm.sortOrder} onChange={(e) => setDepartmentForm({ ...departmentForm, sortOrder: Number(e.target.value || 0) })} />
+            <button className="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" onClick={() => void authedFetch("/api/rbac/departments", { method: "POST", body: JSON.stringify(departmentForm) }).then(loadCore)}>
+              新增组织
+            </button>
+          </div>
+          <SimpleTable rows={departments} columns={["deptCode", "deptName", "leader", "phone", "sortOrder"]} onDelete={(id) => void onDelete("departments", id)} onEdit={async (id) => {
+            openSingleFieldDialog({
+              title: "编辑组织",
+              label: "组织名称",
+              fieldName: "deptName",
+              onSubmit: async (deptName) => {
+                await authedFetch(`/api/rbac/departments/${id}`, { method: "PUT", body: JSON.stringify({ deptName }) });
+                await loadCore();
+              },
+            });
+          }} />
+        </Card>
+      )}
+
+      {activeTab === "菜单管理" && (
+        <Card title="菜单管理（支持多级）">
+          <div className="mt-3 grid gap-2 md:grid-cols-8">
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="父级ID（根节点填0）" value={menuForm.parentId} onChange={(e) => setMenuForm({ ...menuForm, parentId: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="菜单名称" value={menuForm.menuName} onChange={(e) => setMenuForm({ ...menuForm, menuName: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="路径" value={menuForm.path} onChange={(e) => setMenuForm({ ...menuForm, path: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="组件" value={menuForm.component} onChange={(e) => setMenuForm({ ...menuForm, component: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="图标" value={menuForm.icon} onChange={(e) => setMenuForm({ ...menuForm, icon: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="权限码" value={menuForm.permissionCode} onChange={(e) => setMenuForm({ ...menuForm, permissionCode: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" type="number" placeholder="排序" value={menuForm.sortOrder} onChange={(e) => setMenuForm({ ...menuForm, sortOrder: Number(e.target.value || 0) })} />
+            <button className="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" onClick={() => void authedFetch("/api/rbac/menus", { method: "POST", body: JSON.stringify(menuForm) }).then(loadCore)}>
+              新增菜单
+            </button>
+          </div>
+
+          <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="mb-2 text-sm font-semibold text-slate-700">菜单树</div>
+            <MenuTree
+              nodes={menuTree}
+              expandedMap={expandedMenuIds}
+              onToggle={(id) => setExpandedMenuIds((prev) => ({ ...prev, [id]: !prev[id] }))}
+              renderActions={(id) => (
+                <>
+                  <button className="rounded border border-slate-300 px-2 py-0.5 text-xs" onClick={async () => {
+                    openSingleFieldDialog({
+                      title: "编辑菜单",
+                      label: "菜单名称",
+                      fieldName: "menuName",
+                      onSubmit: async (menuName) => {
+                        await authedFetch(`/api/rbac/menus/${id}`, { method: "PUT", body: JSON.stringify({ menuName }) });
+                        await loadCore();
+                      },
+                    });
+                  }}>编辑</button>
+                  <button className="rounded border border-rose-300 px-2 py-0.5 text-xs text-rose-700" onClick={() => void onDelete("menus", id)}>删除</button>
+                </>
+              )}
+            />
+          </div>
+        </Card>
+      )}
+
+      {activeTab === "资源管理" && (
+        <Card title="资源管理">
+          <div className="mt-3 grid gap-2 md:grid-cols-9">
+            <select className="rounded-lg border px-2 py-2 text-sm" value={resourceForm.menuId} onChange={(e) => setResourceForm({ ...resourceForm, menuId: e.target.value })}>
+              <option value="">关联菜单</option>
+              {menus.map((menu) => <option key={String(menu.id)} value={String(menu.id)}>{String(menu.menuName || menu.id)}</option>)}
+            </select>
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="资源名称" value={resourceForm.resourceName} onChange={(e) => setResourceForm({ ...resourceForm, resourceName: e.target.value })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="资源编码" value={resourceForm.resourceCode} onChange={(e) => setResourceForm({ ...resourceForm, resourceCode: e.target.value })} />
+            <select className="rounded-lg border px-2 py-2 text-sm" value={resourceForm.method} onChange={(e) => setResourceForm({ ...resourceForm, method: e.target.value })}>
+              <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option>
+            </select>
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="路径" value={resourceForm.path} onChange={(e) => setResourceForm({ ...resourceForm, path: e.target.value })} />
+            <select className="rounded-lg border px-2 py-2 text-sm" value={resourceForm.matchType} onChange={(e) => setResourceForm({ ...resourceForm, matchType: e.target.value })}>
+              <option>EXACT</option><option>ANT</option>
+            </select>
+            <input className="rounded-lg border px-2 py-2 text-sm" type="number" placeholder="优先级" value={resourceForm.priority} onChange={(e) => setResourceForm({ ...resourceForm, priority: Number(e.target.value || 0) })} />
+            <input className="rounded-lg border px-2 py-2 text-sm" placeholder="备注" value={resourceForm.remark} onChange={(e) => setResourceForm({ ...resourceForm, remark: e.target.value })} />
+            <button className="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" onClick={() => void authedFetch("/api/rbac/resources", { method: "POST", body: JSON.stringify(resourceForm) }).then(loadCore)}>
+              新增资源
+            </button>
+          </div>
+          <SimpleTable rows={resources} columns={["resourceName", "resourceCode", "method", "path", "matchType", "priority"]} onDelete={(id) => void onDelete("resources", id)} onEdit={async (id) => {
+            openSingleFieldDialog({
+              title: "编辑资源",
+              label: "资源名称",
+              fieldName: "resourceName",
+              onSubmit: async (resourceName) => {
+                await authedFetch(`/api/rbac/resources/${id}`, { method: "PUT", body: JSON.stringify({ resourceName }) });
+                await loadCore();
+              },
+            });
+          }} />
+        </Card>
+      )}
+
+      {activeTab === "权限管理" && activeRoleSubView === "角色管理" && (
+        <Card title="角色管理">
+            <div className="mt-3 grid gap-2 md:grid-cols-6">
+              <input className="rounded-lg border px-2 py-2 text-sm" placeholder="角色编码" value={roleForm.roleCode} onChange={(e) => setRoleForm({ ...roleForm, roleCode: e.target.value })} />
+              <input className="rounded-lg border px-2 py-2 text-sm" placeholder="角色名称" value={roleForm.roleName} onChange={(e) => setRoleForm({ ...roleForm, roleName: e.target.value })} />
+              <select className="rounded-lg border px-2 py-2 text-sm" value={roleForm.roleType} onChange={(e) => setRoleForm({ ...roleForm, roleType: e.target.value })}><option value="NORMAL">NORMAL</option><option value="SUPER_ADMIN">SUPER_ADMIN</option></select>
+              <input className="rounded-lg border px-2 py-2 text-sm" type="number" placeholder="排序" value={roleForm.sortOrder} onChange={(e) => setRoleForm({ ...roleForm, sortOrder: Number(e.target.value || 0) })} />
+              <input className="rounded-lg border px-2 py-2 text-sm" placeholder="备注" value={roleForm.remark} onChange={(e) => setRoleForm({ ...roleForm, remark: e.target.value })} />
+              <button className="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" onClick={() => void authedFetch("/api/rbac/roles", { method: "POST", body: JSON.stringify(roleForm) }).then(loadCore)}>新增角色</button>
+            </div>
+            <SimpleTable rows={roles} columns={["roleCode", "roleName", "roleType", "sortOrder", "remark"]} onDelete={(id) => void onDelete("roles", id)} onEdit={async (id) => {
+              openSingleFieldDialog({
+                title: "编辑角色",
+                label: "角色名称",
+                fieldName: "roleName",
+                onSubmit: async (roleName) => {
+                  await authedFetch(`/api/rbac/roles/${id}`, { method: "PUT", body: JSON.stringify({ roleName }) });
+                  await loadCore();
+                },
+              });
+            }} />
+          </Card>
+      )}
+
+      {activeTab === "权限管理" && activeRoleSubView === "菜单授权" && (
+        <div className="space-y-4">
+          <Card title="菜单授权">
+              <select className="mt-2 w-full rounded-lg border px-3 py-2 text-sm" value={selectedRoleId} onChange={(e) => setSelectedRoleId(e.target.value)}>
+                {roles.map((role) => <option key={String(role.id)} value={String(role.id)}>{String(role.roleName || role.roleCode || role.id)}</option>)}
+              </select>
+              <button className="mt-3 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" onClick={() => void saveRoleBindings()}>保存授权</button>
+            </Card>
+
+            <Card title="菜单权限">
+              <MenuTreeCheckbox
+                nodes={menuTree}
+                checkedIds={selectedMenuIds}
+                expandedMap={expandedMenuIds}
+                onToggleExpand={(id) => setExpandedMenuIds((prev) => ({ ...prev, [id]: !prev[id] }))}
+                onToggleCheck={(id) => setSelectedMenuIds(toggle(selectedMenuIds, id))}
+              />
+            </Card>
+          </div>
+      )}
+
+      {activeTab === "权限管理" && activeRoleSubView === "资源授权" && (
+        <div className="space-y-4">
+            <Card title="资源授权">
+              <select className="mt-2 w-full rounded-lg border px-3 py-2 text-sm" value={selectedRoleId} onChange={(e) => setSelectedRoleId(e.target.value)}>
+                {roles.map((role) => <option key={String(role.id)} value={String(role.id)}>{String(role.roleName || role.roleCode || role.id)}</option>)}
+              </select>
+              <button className="mt-3 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700" onClick={() => void saveRoleBindings()}>保存授权</button>
+            </Card>
+            <Card title="资源权限">
+              <div className="max-h-56 space-y-1 overflow-auto text-sm">
+                {resources.map((resource) => {
+                  const id = String(resource.id);
+                  return (
+                    <label key={id} className="flex items-start gap-2 rounded-md px-2 py-1 hover:bg-slate-50">
+                      <input type="checkbox" checked={selectedResourceIds.includes(id)} onChange={() => setSelectedResourceIds(toggle(selectedResourceIds, id))} />
+                      <span>{String(resource.resourceCode || resource.resourceName || resource.id)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </Card>
+        </div>
+      )}
+      </section>
+
+      <ManagedDialog dialog={dialog} onClose={() => setDialog(null)} />
+    </div>
+  );
+}
+
+function Card(props: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h3 className="text-sm font-semibold text-slate-900">{props.title}</h3>
+      {props.children}
+    </div>
+  );
+}
+
+function ManagedDialog(props: { dialog: 弹框状态; onClose: () => void }) {
+  const [values, setValues] = useState<Record<string, string | string[]>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (props.dialog?.type === "form") {
+      setValues(props.dialog.initialValues);
+    }
+  }, [props.dialog]);
+
+  if (!props.dialog) return null;
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      if (props.dialog?.type === "confirm") {
+        await props.dialog.onConfirm();
+      }
+      if (props.dialog?.type === "form") {
+        await props.dialog.onSubmit(values);
+      }
+      props.onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const title = props.dialog.title;
+  const confirmText = props.dialog.confirmText || "确定";
+  const isDanger = props.dialog.type === "confirm" && props.dialog.danger;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+              {props.dialog.type === "form" && props.dialog.description ? (
+                <p className="mt-1 text-sm text-slate-500">{props.dialog.description}</p>
+              ) : null}
+            </div>
+            <button className="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-200" onClick={props.onClose} type="button">
+              关闭
+            </button>
+          </div>
+        </div>
+
+        <div className="px-5 py-4">
+          {props.dialog.type === "confirm" ? (
+            <p className="text-sm leading-6 text-slate-700">{props.dialog.description}</p>
+          ) : (
+            <div className="space-y-4">
+              {props.dialog.fields.map((field) => {
+                if (field.type === "select") {
+                  return (
+                    <label key={field.name} className="block">
+                      <span className="mb-1 block text-sm font-medium text-slate-700">{field.label}</span>
+                      <select
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        value={String(values[field.name] || "")}
+                        onChange={(event) => setValues((prev) => ({ ...prev, [field.name]: event.target.value }))}
+                      >
+                        {field.options.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                }
+
+                if (field.type === "checkboxGroup") {
+                  const checkedValues = Array.isArray(values[field.name]) ? values[field.name] as string[] : [];
+                  return (
+                    <div key={field.name}>
+                      <div className="mb-2 text-sm font-medium text-slate-700">{field.label}</div>
+                      <div className="max-h-56 space-y-1 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
+                        {field.options.map((option) => (
+                          <label key={option.value} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-white">
+                            <input
+                              type="checkbox"
+                              checked={checkedValues.includes(option.value)}
+                              onChange={() => {
+                                const next = checkedValues.includes(option.value)
+                                  ? checkedValues.filter((item) => item !== option.value)
+                                  : [...checkedValues, option.value];
+                                setValues((prev) => ({ ...prev, [field.name]: next }));
+                              }}
+                            />
+                            <span>{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <label key={field.name} className="block">
+                    <span className="mb-1 block text-sm font-medium text-slate-700">{field.label}</span>
+                    <input
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      placeholder={field.placeholder}
+                      value={String(values[field.name] || "")}
+                      onChange={(event) => setValues((prev) => ({ ...prev, [field.name]: event.target.value }))}
+                    />
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
+          <button className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-100" onClick={props.onClose} type="button">
+            取消
+          </button>
+          <button
+            className={`rounded-lg px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60 ${isDanger ? "bg-rose-600 hover:bg-rose-700" : "bg-blue-600 hover:bg-blue-700"}`}
+            disabled={submitting}
+            onClick={() => void submit()}
+            type="button"
+          >
+            {submitting ? "处理中..." : confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SimpleTable(props: {
+  rows: 行数据[];
+  columns: string[];
+  onDelete: (id: string) => void;
+  onEdit: (id: string) => Promise<void> | void;
+  extraAction?: (row: 行数据) => React.ReactNode;
+}) {
+  return (
+    <div className="mt-4 overflow-auto rounded-xl border border-slate-200">
+      <table className="min-w-full text-sm">
+        <thead className="bg-slate-50">
+          <tr className="border-b border-slate-200 text-left text-slate-600">
+            {props.columns.map((column) => <th key={column} className="px-3 py-2">{column}</th>)}
+            <th className="px-3 py-2">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.rows.map((row) => (
+            <tr key={String(row.id)} className="border-b border-slate-100 hover:bg-slate-50/60">
+              {props.columns.map((column) => <td key={column} className="px-3 py-2">{String(row[column] ?? "")}</td>)}
+              <td className="space-x-2 px-3 py-2">
+                {props.extraAction ? props.extraAction(row) : null}
+                <button className="rounded border border-slate-300 px-2 py-1 text-xs" onClick={() => void props.onEdit(String(row.id))}>编辑</button>
+                <button className="rounded border border-rose-300 px-2 py-1 text-xs text-rose-700" onClick={() => props.onDelete(String(row.id))}>删除</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function MenuTree(props: {
+  nodes: 菜单节点[];
+  expandedMap: Record<string, boolean>;
+  onToggle: (id: string) => void;
+  renderActions: (id: string) => React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1 text-sm">
+      {props.nodes.map((node) => (
+        <MenuTreeRow key={node.id} node={node} level={0} expandedMap={props.expandedMap} onToggle={props.onToggle} renderActions={props.renderActions} />
+      ))}
+    </div>
+  );
+}
+
+function MenuTreeRow(props: React.PropsWithChildren<{
+  node: 菜单节点;
+  level: number;
+  expandedMap: Record<string, boolean>;
+  onToggle: (id: string) => void;
+  renderActions: (id: string) => React.ReactNode;
+}>) {
+  const hasChildren = Boolean(props.node.children && props.node.children.length > 0);
+  const expanded = hasChildren ? props.expandedMap[props.node.id] !== false : false;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between rounded-md px-2 py-1 hover:bg-white" style={{ paddingLeft: `${props.level * 20 + 8}px` }}>
+        <div className="flex items-center gap-2">
+          {hasChildren ? <button className="w-5 text-left text-slate-500" onClick={() => props.onToggle(props.node.id)}>{expanded ? "?" : "?"}</button> : <span className="w-5" />}
+          <span className="font-medium text-slate-800">{props.node.menuName || props.node.id}</span>
+          <span className="text-xs text-slate-500">{props.node.path || "-"}</span>
+        </div>
+        <div className="space-x-2">{props.renderActions(props.node.id)}</div>
+      </div>
+      {hasChildren && expanded && props.node.children?.map((child) => (
+        <MenuTreeRow key={child.id} node={child} level={props.level + 1} expandedMap={props.expandedMap} onToggle={props.onToggle} renderActions={props.renderActions} />
+      ))}
+    </div>
+  );
+}
+
+function MenuTreeCheckbox(props: {
+  nodes: 菜单节点[];
+  checkedIds: string[];
+  expandedMap: Record<string, boolean>;
+  onToggleExpand: (id: string) => void;
+  onToggleCheck: (id: string) => void;
+}) {
+  return (
+    <div className="max-h-56 space-y-1 overflow-auto text-sm">
+      {props.nodes.map((node) => (
+        <MenuTreeCheckboxRow
+          key={node.id}
+          node={node}
+          level={0}
+          checkedIds={props.checkedIds}
+          expandedMap={props.expandedMap}
+          onToggleExpand={props.onToggleExpand}
+          onToggleCheck={props.onToggleCheck}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MenuTreeCheckboxRow(props: React.PropsWithChildren<{
+  node: 菜单节点;
+  level: number;
+  checkedIds: string[];
+  expandedMap: Record<string, boolean>;
+  onToggleExpand: (id: string) => void;
+  onToggleCheck: (id: string) => void;
+}>) {
+  const hasChildren = Boolean(props.node.children && props.node.children.length > 0);
+  const expanded = hasChildren ? props.expandedMap[props.node.id] !== false : false;
+  return (
+    <div>
+      <label className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-slate-50" style={{ paddingLeft: `${props.level * 20 + 8}px` }}>
+        {hasChildren ? <button type="button" className="w-5 text-left text-slate-500" onClick={() => props.onToggleExpand(props.node.id)}>{expanded ? "?" : "?"}</button> : <span className="w-5" />}
+        <input type="checkbox" checked={props.checkedIds.includes(props.node.id)} onChange={() => props.onToggleCheck(props.node.id)} />
+        <span>{props.node.menuName || props.node.id}</span>
+      </label>
+      {hasChildren && expanded && props.node.children?.map((child) => (
+        <MenuTreeCheckboxRow
+          key={child.id}
+          node={child}
+          level={props.level + 1}
+          checkedIds={props.checkedIds}
+          expandedMap={props.expandedMap}
+          onToggleExpand={props.onToggleExpand}
+          onToggleCheck={props.onToggleCheck}
+        />
+      ))}
+    </div>
+  );
+}
+
+
+function normalizeDataScope(value: string): 数据范围 {
+  if (value === "DEPT" || value === "DEPT_AND_SUB" || value === "ALL") return value;
+  return "SELF";
+}
+
+function buildExpandState(nodes: 菜单节点[]): Record<string, boolean> {
+  const state: Record<string, boolean> = {};
+  const visit = (items: 菜单节点[]) => {
+    items.forEach((item) => {
+      state[item.id] = true;
+      if (item.children?.length) visit(item.children);
+    });
+  };
+  visit(nodes);
+  return state;
+}
+

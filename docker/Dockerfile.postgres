@@ -1,0 +1,22 @@
+# ============================================================================
+# PostgreSQL 16 + pgvector + TimescaleDB
+#
+# 基于 pgvector 官方镜像（Debian 12 Bookworm），加装 TimescaleDB。
+# 两者均从 PGDG apt 仓库安装，无需编译。
+#
+# 构建: docker build -f docker/Dockerfile.postgres -t efloow-postgres:16 .
+# ============================================================================
+
+FROM pgvector/pgvector:pg16
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-16-timescaledb \
+    && rm -rf /var/lib/apt/lists/*
+
+# TimescaleDB 要求 shared_preload_libraries
+RUN echo "shared_preload_libraries = 'timescaledb'" \
+    >> /usr/share/postgresql/postgresql.conf.sample
+
+# 健康检查
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
+    CMD pg_isready -U postgres || exit 1

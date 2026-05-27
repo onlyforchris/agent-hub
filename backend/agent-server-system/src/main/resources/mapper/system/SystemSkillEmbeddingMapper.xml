@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.efloow.agenthub.system.mapper.SystemSkillEmbeddingMapper">
+
+    <delete id="deleteBySkillId">
+        DELETE FROM sys_skill_embedding WHERE skill_id = #{skillId}
+    </delete>
+
+    <select id="searchSimilar" resultType="com.efloow.agenthub.system.entity.SystemSkillEmbedding">
+        SELECT id,
+               skill_id AS skillId,
+               embedding_model AS embeddingModel,
+               embedding_vector::text AS embeddingVector,
+               routing_text AS routingText,
+               status,
+               remark,
+               create_by AS createBy,
+               create_time AS createTime,
+               update_by AS updateBy,
+               update_time AS updateTime,
+               1 - (embedding_vector &lt;=&gt; #{embedding}::vector) AS similarity
+        FROM sys_skill_embedding
+        WHERE status = 1
+        <if test="skillIds != null and skillIds.size() > 0">
+            AND skill_id IN
+            <foreach collection="skillIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+        ORDER BY embedding_vector &lt;=&gt; #{embedding}::vector
+        LIMIT #{limit}
+    </select>
+
+</mapper>

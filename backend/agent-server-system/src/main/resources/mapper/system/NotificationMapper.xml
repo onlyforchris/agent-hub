@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.efloow.agenthub.system.mapper.AgentNotificationReceiptMapper">
+
+    <select id="selectMyNotifications" resultType="map">
+        select
+            r.id as "receiptId",
+            r.is_read as "isRead",
+            r.read_at as "readAt",
+            n.id as "notificationId",
+            n.title,
+            n.content,
+            n.category,
+            n.sender_id as "senderId",
+            n.priority,
+            n.channel,
+            n.create_time as "createTime"
+        from agent_notification_receipt r
+        join agent_notification n on n.id = r.notification_id and n.status = 1
+        where r.recipient_id = #{userId}
+          and r.is_deleted = 0
+          and r.status = 1
+        order by n.create_time desc
+    </select>
+</mapper>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小亿流 - 智能风控审批台 (真·全量完整版)</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .custom-checkbox:checked { background-color: #4f46e5; border-color: #4f46e5; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+  </style>
+</head>
+<body class="bg-[#f8fafc] antialiased selection:bg-indigo-500 selection:text-white font-sans overflow-hidden">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // ==========================================
+    // 1. 基础原子组件
+    // ==========================================
+    const Button = ({ variant = 'primary', children, onClick, className="", icon }) => {
+      const variants = {
+        primary: "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-[0_4px_14px_0_rgba(99,102,241,0.39)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.23)] hover:-translate-y-0.5",
+        secondary: "bg-white text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-50 hover:text-indigo-600",
+        danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 hover:border-red-200",
+        ghost: "bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+      };
+      return <button className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-200 active:scale-[0.97] ${variants[variant]} ${className}`} onClick={onClick}>{icon && <span className="w-4 h-4">{icon}</span>}{children}</button>;
+    };
+
+    const FormGroup = ({ label, required, children }) => (
+      <div className="mb-5"><label className="block text-sm font-medium text-slate-700 mb-2">{label} {required && <span className="text-red-500">*</span>}</label>{children}</div>
+    );
+
+    const Input = ({ placeholder, type="text", className="" }) => <input type={type} placeholder={placeholder} className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50/50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all ${className}`} />;
+    
+    const Select = ({ options, className="" }) => <select className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-slate-50/50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all appearance-none cursor-pointer ${className}`}>{options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}</select>;
+    
+    const Badge = ({ type, children }) => {
+      const types = { danger: "bg-red-50 text-red-600 ring-red-500/20", warning: "bg-yellow-50 text-yellow-600 ring-yellow-500/20", success: "bg-green-50 text-green-600 ring-green-500/20", default: "bg-slate-50 text-slate-600 ring-slate-500/20" };
+      return <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ring-1 ${types[type] || types.default}`}>{children}</span>;
+    };
+
+    const Tabs = ({ tabs, activeTab, onChange }) => (
+      <div className="flex border-b border-slate-200 mb-6 px-2">
+        {tabs.map(t => <button key={t.id} onClick={() => onChange(t.id)} className={`px-6 py-3.5 text-sm font-medium border-b-2 transition-all duration-200 flex items-center gap-2 ${activeTab === t.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}>{t.icon} {t.label}</button>)}
+      </div>
+    );
+
+    // ==========================================
+    // 2. 头部全局组件
+    // ==========================================
+    const GlobalHeader = ({ breadcrumbs }) => {
+      const [showMsg, setShowMsg] = useState(false);
+      const [showProfile, setShowProfile] = useState(false);
+
+      return (
+        <header className="h-16 bg-white border-b border-slate-200/60 flex items-center justify-between px-8 z-30 shadow-sm relative shrink-0">
+          <h2 className="text-slate-800 font-semibold flex items-center gap-2 text-sm">
+             {breadcrumbs.map((b, i) => (
+                <React.Fragment key={i}>
+                  <span className={i === breadcrumbs.length - 1 ? 'text-slate-800' : 'text-slate-400 font-normal'}>{b}</span>
+                  {i < breadcrumbs.length - 1 && <span className="text-slate-300">/</span>}
+                </React.Fragment>
+             ))}
+          </h2>
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              <button onBlur={() => setTimeout(() => setShowMsg(false), 200)} onClick={() => setShowMsg(!showMsg)} className="relative p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+              </button>
+              <div className={`absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transition-all duration-200 transform origin-top-right ${showMsg ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                <div className="px-5 py-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                   <h3 className="text-sm font-bold text-slate-800">消息通知</h3><span className="text-xs text-indigo-600 cursor-pointer hover:underline">全部已读</span>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {[{ title: '尽调预警', desc: '星辰贸易存在异常资金回流', time: '10分钟前', type: 'text-red-500 bg-red-50' }, { title: '任务分配', desc: '收到 14 笔待核查流水', time: '昨天 15:30', type: 'text-blue-500 bg-blue-50' }].map((msg, i) => (
+                    <div key={i} className="px-5 py-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer flex gap-4 transition-colors">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${msg.type}`}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                      <div><p className="text-sm font-medium text-slate-800">{msg.title}</p><p className="text-xs text-slate-500 mt-1">{msg.desc}</p></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="relative">
+              <div onClick={() => setShowProfile(!showProfile)} className="flex items-center gap-3 cursor-pointer p-1.5 rounded-full hover:bg-slate-100 transition-colors">
+                <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Admin&backgroundColor=e2e8f0" alt="avatar" className="w-8 h-8 rounded-full border border-slate-200" />
+                <div className="text-sm"><p className="font-medium text-slate-700 leading-none">李审计</p></div>
+                <svg className="w-4 h-4 text-slate-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+              <div onMouseLeave={() => setShowProfile(false)} className={`absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden transition-all duration-200 transform origin-top-right ${showProfile ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                <div className="px-4 py-3 border-b border-slate-50 bg-slate-50/50"><p className="text-sm font-bold text-slate-800">李审计</p></div>
+                <div className="p-2 border-t border-slate-50"><a href="#" className="flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">退出登录</a></div>
+              </div>
+            </div>
+          </div>
+        </header>
+      );
+    };
+
+    // ==========================================
+    // 3. 页面模块 (工作台 & 审批流详情)
+    // ==========================================
+    const WorkspaceModule = () => (
+      <div className="p-8 animate-fade-in">
+         <div className="flex items-end justify-between mb-8">
+           <div><h1 className="text-2xl font-bold text-slate-800 mb-1">早安，李审计！祝您开启高效的一天。</h1><p className="text-slate-500 text-sm">系统昨日共为您拦截 128 项业务风险，目前系统运行平稳。</p></div>
+           <Button variant="primary">发起新核查</Button>
+         </div>
+         <div className="grid grid-cols-4 gap-6 mb-8">
+           {[
+             { label: '今日待办任务', value: '24', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', color: 'text-blue-500 bg-blue-50' },
+             { label: '异常预警', value: '7', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'text-red-500 bg-red-50' },
+             { label: '本周结案', value: '142', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-green-500 bg-green-50' },
+             { label: '平均时效', value: '2.4 h', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-purple-500 bg-purple-50' }
+           ].map((s, i) => (
+             <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+               <div className="flex items-center gap-4">
+                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${s.color}`}><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={s.icon}></path></svg></div>
+                 <div><p className="text-sm font-medium text-slate-500 mb-0.5">{s.label}</p><p className="text-2xl font-bold text-slate-800 leading-none">{s.value}</p></div>
+               </div>
+             </div>
+           ))}
+         </div>
+         <div className="grid grid-cols-3 gap-8">
+            <div className="col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-6">最近待办任务</h3>
+              <div className="space-y-4">
+                {[1,2,3].map((_,i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all cursor-pointer">
+                     <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                        <div><p className="font-medium text-slate-800 text-sm">核查：星辰贸易有限公司流水异常单</p><p className="text-xs text-slate-400 mt-1">剩余处理时效: 2小时14分</p></div>
+                     </div>
+                     <Button variant="ghost" className="text-indigo-600">立即处理</Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+         </div>
+      </div>
+    );
+
+    const AuditModule = () => {
+      const [activeTab, setActiveTab] = useState('detail');
+
+      // 拆解出来的子组件 (工作流)
+      const Stepper = ({ steps, currentStep }) => (
+        <div className="flex items-center w-full my-6">
+          {steps.map((step, index) => {
+            const isCompleted = index < currentStep, isCurrent = index === currentStep, isPending = index > currentStep;
+            return (
+              <React.Fragment key={index}>
+                <div className="relative flex flex-col items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 z-10 ${isCompleted ? 'bg-indigo-500 text-white shadow-md' : ''} ${isCurrent ? 'bg-white text-indigo-600 border-2 border-indigo-500 ring-4 ring-indigo-50' : ''} ${isPending ? 'bg-slate-100 text-slate-400 border border-slate-200' : ''}`}>
+                    {isCompleted ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg> : index + 1}
+                  </div>
+                  <span className={`absolute top-10 whitespace-nowrap text-[11px] font-medium ${isCurrent ? 'text-indigo-600' : 'text-slate-500'}`}>{step}</span>
+                </div>
+                {index < steps.length - 1 && <div className={`flex-1 h-[2px] mx-2 rounded-full transition-colors duration-300 ${isCompleted ? 'bg-indigo-500' : 'bg-slate-200'}`}></div>}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      );
+
+      return (
+        <div className="p-8 h-full flex flex-col animate-fade-in">
+          <div className="bg-white rounded-[1.5rem] border border-slate-200/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)] h-full flex flex-col">
+            {/* 业务头部和 Tabs */}
+            <div className="px-8 pt-8 shrink-0">
+              <div className="flex items-center justify-between mb-6">
+                 <div className="flex items-center gap-4">
+                   <h1 className="text-2xl font-bold text-slate-800">流水异常核查单</h1>
+                   <Badge type="warning">高危待核查</Badge>
+                 </div>
+                 <div className="flex gap-3">
+                   <Button variant="danger" className="shadow-sm text-xs">驳回冻结</Button>
+                   <Button variant="primary" className="text-xs">签批结论</Button>
+                 </div>
+              </div>
+              <Tabs 
+                tabs={[
+                  { id: 'detail', label: '审批操作台', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> },
+                  { id: 'list', label: '异常明细底稿', icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg> }
+                ]} 
+                activeTab={activeTab} onChange={setActiveTab} 
+              />
+            </div>
+
+            {/* 可滚动的主内容区 */}
+            <div className="flex-1 px-8 pb-8 overflow-y-auto">
+              
+              {/* Tab 1: 完整版详情 */}
+              {activeTab === 'detail' && (
+                <div className="animate-fade-in">
+                  <div className="mb-10 px-6">
+                    <Stepper steps={['OCR自动提取', 'AI规则比对', '人工交叉复核', '出具尽调报告', '风控归档']} currentStep={2} />
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                    {/* 左侧主要信息区 */}
+                    <div className="col-span-2 space-y-8">
+                      <section>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Detail Info / 业务详情</h3>
+                        <div className="bg-slate-50/60 rounded-2xl border border-slate-100/80 p-6 grid grid-cols-2 gap-y-6 gap-x-8">
+                          {[
+                            { label: '核查任务编号', value: 'DD-2026-X892' }, { label: '被调企业', value: '星辰贸易有限公司', h: true },
+                            { label: '流水采集区间', value: '2025-01-01 至 2025-12-31' }, { label: '初筛风险等级', value: 'High / 高危', h: true },
+                            { label: '疑似异常流水笔数', value: '14 笔 (金额占比 22%)' }, { label: '触发规则', value: '节假日大额对私转账' }
+                          ].map((item, idx) => (
+                            <div key={idx} className="flex flex-col gap-1.5">
+                              <span className="text-[11px] font-semibold text-slate-400 uppercase">{item.label}</span>
+                              <span className={`text-sm font-medium ${item.h ? 'text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md w-fit' : 'text-slate-800'}`}>{item.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                      <section>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Form / 尽调表单补充</h3>
+                        <div className="bg-slate-50/40 border border-slate-100 rounded-2xl p-6 grid grid-cols-2 gap-x-6">
+                          <FormGroup label="人工判定风险等级" required><Select options={['维持系统判定 (高危)', '降级为中度风险', '确认为无风险']} /></FormGroup>
+                          <FormGroup label="复核人代码"><Input placeholder="输入内部审计编号" /></FormGroup>
+                          <div className="col-span-2"><FormGroup label="人工审计批注" required><textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none h-24 bg-white" placeholder="请输入排查说明..."></textarea></FormGroup></div>
+                        </div>
+                      </section>
+                    </div>
+
+                    {/* 右侧附件与日志 */}
+                    <div className="space-y-8">
+                      <section>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Attachments / 支撑附件</h3>
+                        <div className="space-y-3">
+                          {['企业尽调流水表.xlsx', '异常风险核查报告.pdf'].map((name, i) => (
+                            <div key={i} className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-sm transition-all group cursor-pointer">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${i===0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <div><p className="text-sm font-medium text-slate-700 group-hover:text-indigo-600">{name}</p><p className="text-[11px] text-slate-400">{(Math.random()*5+1).toFixed(1)} MB</p></div>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="w-full mt-2 p-5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 hover:border-indigo-300 transition-all flex flex-col items-center justify-center cursor-pointer text-slate-400 hover:text-indigo-500">
+                             <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg><span className="text-xs font-medium">上传补充附件</span>
+                          </div>
+                        </div>
+                      </section>
+                      <section>
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Activity Log / 流转日志</h3>
+                        <ul className="space-y-4 mt-2">
+                          {[
+                            { avatar: 'AI', title: '小亿流 Agent 完成清洗', time: '10:23 AM', desc: '发现与工商不符交易对手 3 家。' },
+                            { avatar: '李', title: '李审计 提交批注', time: '14:05 PM', desc: '需补充相关贸易合同材料。' }
+                          ].map((item, idx) => (
+                            <li key={idx} className="relative flex gap-4">
+                              {idx !== 1 && <div className="absolute left-[19px] top-10 bottom-[-16px] w-[2px] bg-slate-100 rounded-full"></div>}
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-100 to-purple-50 flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0 shadow-sm border border-white z-10">{item.avatar}</div>
+                              <div className="bg-white border border-slate-100 rounded-2xl p-4 flex-1 shadow-sm"><p className="text-sm font-medium text-slate-800 mb-1">{item.title}</p><p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p></div>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 2: 完整版列表 */}
+              {activeTab === 'list' && (
+                 <div className="animate-fade-in flex flex-col h-full">
+                    <div className="flex items-center justify-between mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100 shrink-0">
+                      <div className="flex gap-4 items-center flex-1">
+                        <Input placeholder="输入交易单号或对手名称..." className="w-72 bg-white" />
+                        <Select options={['所有风险类型', '大额对私', '关联交易']} className="bg-white w-48" />
+                      </div>
+                      <div className="flex gap-2"><Button variant="ghost">重置</Button><Button variant="secondary">搜索提取</Button></div>
+                    </div>
+                    
+                    <div className="border border-slate-200 rounded-xl mb-4 shrink-0 overflow-hidden">
+                      <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
+                          <tr>
+                            <th className="px-4 py-3 w-10 text-center"><input type="checkbox" className="custom-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></th>
+                            <th className="px-4 py-3">交易单号</th>
+                            <th className="px-4 py-3">交易对手</th>
+                            <th className="px-4 py-3 text-right">发生额</th>
+                            <th className="px-4 py-3">命中的风控规则</th>
+                            <th className="px-4 py-3 text-right">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                          {[
+                            { id: 'TRX-9901', t: '张伟 (个人)', amt: '- ¥ 500,000.00', risk: 'danger', r: '大额对私' },
+                            { id: 'TRX-9905', t: '空壳科技有限责任公司', amt: '- ¥ 1,200,000.00', risk: 'warning', r: '新开户交易' },
+                            { id: 'TRX-9912', t: '李强 (关联方)', amt: '+ ¥ 350,000.00', risk: 'danger', r: '资金回流' }
+                          ].map((row, i) => (
+                            <tr key={i} className="hover:bg-indigo-50/30 transition-colors">
+                              <td className="px-4 py-4 text-center"><input type="checkbox" className="custom-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" /></td>
+                              <td className="px-4 py-4 font-medium text-slate-800">{row.id}</td>
+                              <td className="px-4 py-4">{row.t}</td>
+                              <td className={`px-4 py-4 text-right font-semibold ${row.amt.includes('+') ? 'text-green-600' : 'text-red-600'}`}>{row.amt}</td>
+                              <td className="px-4 py-4"><Badge type={row.risk}>{row.r}</Badge></td>
+                              <td className="px-4 py-4 text-right"><button className="text-indigo-600 hover:underline px-2 text-xs">追溯</button></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-4 shrink-0">
+                      <span className="text-sm text-slate-500">共 14 条数据</span>
+                      <div className="flex items-center gap-1.5">
+                        <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 text-sm disabled:opacity-50" disabled>上一页</button>
+                        <button className="w-8 h-8 rounded-lg bg-indigo-600 text-white text-sm font-medium">1</button>
+                        <button className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">2</button>
+                        <button className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-sm hover:bg-slate-50">下一页</button>
+                      </div>
+                    </div>
+                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 4. 左侧菜单与主应用
+    // ==========================================
+    const SidebarItem = ({ item, depth = 0, activeId, setActiveId }) => {
+      const checkActive = (menuItem) => menuItem.id === activeId || (menuItem.children && menuItem.children.some(checkActive));
+      const isActive = activeId === item.id, isParentActive = checkActive(item), hasChildren = item.children && item.children.length > 0;
+      const [isOpen, setIsOpen] = useState(isParentActive || depth === 0);
+
+      const paddingLeft = depth === 0 ? '1rem' : `${(depth * 1) + 1.5}rem`;
+      return (
+        <li className="relative mb-0.5">
+          <div onClick={() => hasChildren ? setIsOpen(!isOpen) : setActiveId(item.id)} style={{ paddingLeft }} className={`group flex items-center justify-between py-2.5 pr-4 mx-3 rounded-xl cursor-pointer transition-all duration-200 ease-out ${isActive && !hasChildren ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30 font-medium translate-x-1' : 'text-slate-400 hover:text-white hover:bg-slate-800/80'} ${isParentActive && hasChildren && depth > 0 ? 'text-indigo-300' : ''}`}>
+            <div className="flex items-center gap-3">
+              {depth === 0 && item.icon && <svg className={`w-5 h-5 transition-transform group-hover:scale-110 ${isParentActive || isActive ? 'text-indigo-400' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon}></path></svg>}
+              {depth > 0 && <span className={`rounded-full transition-all ${depth === 1 ? 'w-1.5 h-1.5' : 'w-1 h-1'} ${isActive ? 'bg-white shadow-[0_0_5px_#fff]' : 'bg-slate-600 group-hover:bg-indigo-400'}`}></span>}
+              <span className={`tracking-wide ${depth === 0 ? 'text-[14px] font-medium' : 'text-[13px]'}`}>{item.title}</span>
+            </div>
+            {hasChildren && <svg className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-90 text-indigo-400' : 'text-slate-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>}
+          </div>
+          {hasChildren && (
+            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+              <ul className="overflow-hidden relative">
+                {depth > 0 && <div className="absolute left-[1.8rem] top-0 bottom-0 w-[1px] bg-slate-800/50"></div>}
+                <div className="pt-1 pb-1">
+                  {item.children.map((child) => <SidebarItem key={child.id} item={child} depth={depth + 1} activeId={activeId} setActiveId={setActiveId} />)}
+                </div>
+              </ul>
+            </div>
+          )}
+        </li>
+      );
+    };
+
+    const App = () => {
+      // 路由强制默认在 异常流水复核 页面，以便您直接看到恢复的代码
+      const [activeId, setActiveId] = useState('audit-abnormal');
+
+      const menuData = [
+        { id: 'dashboard', title: '个人工作台', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
+        { id: 'risk', title: '风控尽调引擎', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', children: [ { id: 'statement', title: '流水凭证分析', children: [ { id: 'audit-abnormal', title: '异常流水复核' } ] } ] },
+      ];
+
+      const getBreadcrumbs = (id) => id === 'dashboard' ? ['首页', '个人工作台'] : ['风控尽调引擎', '流水分析', '异常流水复核'];
+
+      return (
+        <div className="flex h-screen w-full">
+          <aside className="w-64 bg-[#0B1120] border-r border-slate-800/80 flex flex-col shadow-2xl z-40 flex-shrink-0">
+            <div className="h-16 flex items-center px-6 border-b border-slate-800/50 mt-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold mr-3 shadow-lg shadow-indigo-500/20"><span className="text-sm font-black">亿</span></div>
+              <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 to-white text-lg tracking-wider">小亿流</span>
+            </div>
+            <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
+              <ul>{menuData.map(item => <SidebarItem key={item.id} item={item} activeId={activeId} setActiveId={setActiveId} />)}</ul>
+            </div>
+          </aside>
+          <main className="flex-1 flex flex-col relative z-0 bg-slate-50 overflow-hidden">
+            <GlobalHeader breadcrumbs={getBreadcrumbs(activeId)} />
+            <div className="flex-1 overflow-auto">
+              {activeId === 'dashboard' ? <WorkspaceModule /> : <AuditModule />}
+            </div>
+          </main>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

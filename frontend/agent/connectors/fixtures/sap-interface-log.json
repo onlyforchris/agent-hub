@@ -1,0 +1,53 @@
+{
+  "TCH202604160003": [
+    {
+      "settlementNo": "TCH202604160003",
+      "interfaceName": "SAP_INVOICE_CALLBACK_TO_DMS",
+      "sentAt": "2026-04-16T11:21:01+08:00",
+      "returnStatus": "SUCCESS",
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0
+    },
+    {
+      "settlementNo": "TCH202604160003",
+      "interfaceName": "SAP_POSTING_CALLBACK_TO_DMS",
+      "sentAt": "2026-04-16T11:22:01+08:00",
+      "returnStatus": "SUCCESS",
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0
+    }
+  ],
+  "TCH202604160005": [
+    {
+      "settlementNo": "TCH202604160005",
+      "interfaceName": "SAP_INVOICE_CALLBACK_TO_DMS",
+      "sentAt": "2026-04-16T11:55:00+08:00",
+      "returnStatus": "FAIL",
+      "errorCode": "TIMEOUT",
+      "errorMessage": "DMS callback timeout after 30s",
+      "retryCount": 3
+    },
+    {
+      "settlementNo": "TCH202604160005",
+      "interfaceName": "SAP_INVOICE_CALLBACK_TO_DMS",
+      "sentAt": "2026-04-16T12:01:21+08:00",
+      "returnStatus": "FAIL",
+      "errorCode": "DMS_LOCK",
+      "errorMessage": "DMS settlement row locked by user task",
+      "retryCount": 3
+    }
+  ],
+  "TCH202604160008": [
+    {
+      "settlementNo": "TCH202604160008",
+      "interfaceName": "SAP_INVOICE_CALLBACK_TO_DMS",
+      "sentAt": "2026-04-16T13:42:10+08:00",
+      "returnStatus": "FAIL",
+      "errorCode": "MISSING_FX_RATE",
+      "errorMessage": "出口业务汇率主数据未维护",
+      "retryCount": 3
+    }
+  ]
+}

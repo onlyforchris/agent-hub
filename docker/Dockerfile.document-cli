@@ -1,0 +1,21 @@
+# Document Skills CLI 依赖镜像
+# 用途: Python 3 + pandoc + poppler-utils，供 CliProcessRunner 子进程调用
+# 构建: docker build -f docker/Dockerfile.document-cli -t efloow-document-cli:latest .
+# 说明: LibreOffice 体积较大，按需扩展 sidecar；开发环境可在宿主机预装
+
+FROM python:3.11-slim-bookworm
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    pandoc \
+    poppler-utils \
+    qpdf \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONUNBUFFERED=1
+WORKDIR /opt/efloow
+
+# 可选: 复制 Skill 共享脚本供 sidecar 调试
+COPY backend/agent-server-runtime/src/main/resources/skills/_shared/scripts ./scripts
+
+CMD ["python3", "--version"]

@@ -1,0 +1,103 @@
+# Agent 中台本地/线上基础依赖编排文件
+#
+# 作用：
+# - PostgreSQL 16 + pgvector + TimescaleDB（基于 pgvector/pgvector:pg16 定制镜像）
+# - Redis 7，用于缓存、运行态、限流、短期会话状态等
+# - 首次创建 PostgreSQL 数据卷时，自动执行 ../database/init 和 ../docker/init.sql 初始化
+#
+# 本地开发操作：
+# 1. 构建镜像（首次或 Dockerfile 变更后）：
+#      docker build -f docker/Dockerfile.postgres -t efloow-postgres:16 .
+# 2. 启动所有服务：
+#      docker compose -f scripts/docker-compose.yml up -d
+# 3. 查看服务状态：
+#      docker compose -f scripts/docker-compose.yml ps
+# 4. 查看日志：
+#      docker compose -f scripts/docker-compose.yml logs -f postgres
+# 5. 停止服务但保留数据：
+#      docker compose -f scripts/docker-compose.yml down
+# 6. 重建并清空本地数据卷，仅限开发环境：
+#      docker compose -f scripts/docker-compose.yml down -v
+#      docker build -f docker/Dockerfile.postgres -t efloow-postgres:16 .
+#      docker compose -f scripts/docker-compose.yml up -d
+#
+# 本地连接信息：
+# - PostgreSQL: 127.0.0.1:5431 / database=efloow_agent / user=postgres
+# - Redis: 127.0.0.1:6378
+# - 后端默认配置位于 agent-server/agent-server-app/src/main/resources/application.yml
+#
+# 线上部署操作：
+# 1. 在服务器安装 Docker 和 Docker Compose Plugin。
+# 2. 构建镜像（或从镜像仓库拉取）：
+#      docker build -f docker/Dockerfile.postgres -t efloow-postgres:16 .
+# 3. 将本文件、database/init、docker/init.sql 和线上 .env 放到同一发布目录结构中。
+# 4. 线上必须通过 .env 覆盖 POSTGRES_PASSWORD，禁止使用默认开发密码：
+#      POSTGRES_DB=efloow_agent
+#      POSTGRES_USER=postgres
+#      POSTGRES_PASSWORD=<strong-password>
+#      POSTGRES_PORT=127.0.0.1:5431
+#      REDIS_PORT=127.0.0.1:6378
+# 5. 启动：
+#      docker compose --env-file .env -f scripts/docker-compose.yml up -d
+# 6. 滚动更新基础依赖镜像前先备份数据库：
+#      docker exec efloow-agent-postgres pg_dump -U postgres efloow_agent > backup.sql
+# 7. 线上不建议执行 down -v；该命令会删除数据库和 Redis 数据卷。
+#
+# 注意：
+# - ports 默认只绑定 127.0.0.1，避免数据库/Redis 暴露到公网。
+# - 如后端也容器化部署在同一个 compose 网络内，后端连接地址应使用服务名 postgres / redis。
+# - PostgreSQL 初始化 SQL 只在数据卷首次创建时执行；已存在数据卷时不会重复执行。
+# - 镜像中已预装 pgvector 和 TimescaleDB 扩展，docker/init.sql 负责 CREATE EXTENSION。
+
+name: efloow-agent-hub
+
+services:
+  postgres:
+    image: efloow-postgres:16
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.postgres
+    container_name: efloow-agent-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-efloow_agent}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-efloow2026pg}
+      TZ: Asia/Shanghai
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=timescaledb
+      - -c
+      - timezone=Asia/Shanghai
+    ports:
+      - "${POSTGRES_PORT:-127.0.0.1:5431}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-efloow_agent}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 服务端：镜像 redis:7-alpine = 官方 Redis 主版本 7（随标签滚动小版本）；与 Java 客户端 Jedis 通过 RESP 协议交互，无强制同版本号
+  # 生产建议钉死补丁级标签，例如 redis:7.4.2-alpine，避免上游镜像静默升级
+  redis:
+    image: redis:7-alpine
+    container_name: efloow-agent-redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-127.0.0.1:6378}:6379"
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,92 @@
+{
+  "TCH202604160001": {
+    "settlementNo": "TCH202604160001",
+    "sapDocNo": "0098765432",
+    "postingAmount": 4488.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T09:55:00+08:00"
+  },
+  "TCH202604160002": {
+    "settlementNo": "TCH202604160002",
+    "sapDocNo": "0098765433",
+    "postingAmount": 5000.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T10:05:00+08:00"
+  },
+  "TCH202604160003": {
+    "settlementNo": "TCH202604160003",
+    "sapDocNo": "0098765434",
+    "postingAmount": 3200.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T11:20:00+08:00"
+  },
+  "TCH202604160004": {
+    "settlementNo": "TCH202604160004",
+    "sapDocNo": "0098765444",
+    "postingAmount": 6800.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T10:58:11+08:00"
+  },
+  "TCH202604160005": {
+    "settlementNo": "TCH202604160005",
+    "sapDocNo": "0098765455",
+    "postingAmount": 12000.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T11:50:32+08:00"
+  },
+  "TCH202604160006": {
+    "settlementNo": "TCH202604160006",
+    "sapDocNo": "0098765466",
+    "postingAmount": 9600.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T12:20:01+08:00"
+  },
+  "TCH202604160007": {
+    "settlementNo": "TCH202604160007",
+    "sapDocNo": "0098765477",
+    "postingAmount": 3000.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T12:55:10+08:00"
+  },
+  "TCH202604160008": {
+    "settlementNo": "TCH202604160008",
+    "sapDocNo": "0098765488",
+    "postingAmount": 28000.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T13:40:55+08:00"
+  },
+  "TCH202604160009": {
+    "settlementNo": "TCH202604160009",
+    "sapDocNo": "0098765499",
+    "postingAmount": 7700.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-04-16T14:18:05+08:00"
+  },
+  "TCH202604160010": {
+    "settlementNo": "TCH202604160010",
+    "sapDocNo": "0098765410",
+    "postingAmount": 4200.0,
+    "postingStatus": "已过账",
+    "billingStatus": "已开票",
+    "cancelStatus": "正常",
+    "postedAt": "2026-03-31T18:50:00+08:00"
+  }
+}

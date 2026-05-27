@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+
+    <!-- ========== 统一日志格式 ========== -->
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [trace=%X{traceId:-}] [session=%X{sessionId:-}] [turn=%X{turnId:-}] [user=%X{userId:-}] [agent=%X{agentId:-}] [%t] %logger{36} - %msg%n"/>
+
+    <!-- ========== 日志目录 ========== -->
+    <property name="LOG_DIR" value="logs"/>
+
+    <!-- ========== Console Appender（开发环境） ========== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ========== App: 应用级日志 ========== -->
+    <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/app.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/app.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== Agent: 编排链路日志 ========== -->
+    <appender name="AGENT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/agent.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/agent.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== Tool: 工具调用日志 ========== -->
+    <appender name="TOOL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/tool.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/tool.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== LLM: 模型调用日志 ========== -->
+    <appender name="LLM_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/llm.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/llm.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== Audit: 审计日志 ========== -->
+    <appender name="AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/audit.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/audit.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== Error: 全局错误汇总 ========== -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/error.log</file>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== 第三方框架日志级别 ========== -->
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.mybatis" level="WARN"/>
+    <logger name="org.apache" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="io.lettuce" level="WARN"/>
+
+    <!-- ========== Agent 编排层 → agent.log + error.log ========== -->
+    <logger name="com.efloow.agenthub.base" level="INFO" additivity="false">
+        <appender-ref ref="AGENT_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+    <logger name="com.efloow.agenthub.controller" level="INFO" additivity="false">
+        <appender-ref ref="AGENT_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+    <logger name="com.efloow.agenthub.router" level="INFO" additivity="false">
+        <appender-ref ref="AGENT_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+    <logger name="com.efloow.agenthub.agent" level="INFO" additivity="false">
+        <appender-ref ref="AGENT_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+
+    <!-- ========== Tool 层 → tool.log + error.log ========== -->
+    <logger name="com.efloow.agenthub.application.tool" level="INFO" additivity="false">
+        <appender-ref ref="TOOL_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+    <logger name="com.efloow.agenthub.infrastructure.tool" level="INFO" additivity="false">
+        <appender-ref ref="TOOL_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+
+    <!-- ========== LLM 层 → llm.log + error.log ========== -->
+    <logger name="com.efloow.agenthub.application.llm" level="DEBUG" additivity="false">
+        <appender-ref ref="LLM_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+    <logger name="com.efloow.agenthub.infrastructure.llm" level="DEBUG" additivity="false">
+        <appender-ref ref="LLM_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+
+    <!-- ========== 审计层 → audit.log + error.log ========== -->
+    <logger name="com.efloow.agenthub.application.audit" level="INFO" additivity="false">
+        <appender-ref ref="AUDIT_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+    <logger name="com.efloow.agenthub.system" level="INFO" additivity="false">
+        <appender-ref ref="AUDIT_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
+
+    <!-- ========== Root: 兜底 → console + app.log + error.log ========== -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+</configuration>
