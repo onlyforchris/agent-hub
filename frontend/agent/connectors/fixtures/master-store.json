@@ -1,0 +1,187 @@
+{
+  "STORE_NB_001": {
+    "storeCode": "STORE_NB_001",
+    "storeName": "宁波某门店",
+    "currentMdmId": "10021046",
+    "history": [
+      {
+        "mdmId": "10021045",
+        "orgCode": "ORG_NB_OLD",
+        "effectiveFrom": "2022-01-01",
+        "effectiveTo": "2025-11-30"
+      },
+      {
+        "mdmId": "10021046",
+        "orgCode": "ORG_NB_NEW",
+        "effectiveFrom": "2025-12-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": [
+      {
+        "fromOrg": "ORG_NB_OLD",
+        "toOrg": "ORG_NB_NEW",
+        "fromMdmId": "10021045",
+        "toMdmId": "10021046",
+        "changedAt": "2025-12-01",
+        "reason": "门店组织拆分"
+      }
+    ]
+  },
+  "STORE_HZ_007": {
+    "storeCode": "STORE_HZ_007",
+    "storeName": "杭州某门店",
+    "currentMdmId": "10031120",
+    "history": [
+      {
+        "mdmId": "10031120",
+        "orgCode": "ORG_HZ_01",
+        "effectiveFrom": "2020-01-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": []
+  },
+  "STORE_SH_034": {
+    "storeCode": "STORE_SH_034",
+    "storeName": "上海某门店",
+    "currentMdmId": "10044220",
+    "history": [
+      {
+        "mdmId": "10044220",
+        "orgCode": "ORG_SH_03",
+        "effectiveFrom": "2021-06-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": []
+  },
+  "STORE_SZ_021": {
+    "storeCode": "STORE_SZ_021",
+    "storeName": "深圳某门店",
+    "currentMdmId": "10053310",
+    "history": [
+      {
+        "mdmId": "10053310",
+        "orgCode": "ORG_SZ_02",
+        "effectiveFrom": "2023-03-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": []
+  },
+  "STORE_GZ_011": {
+    "storeCode": "STORE_GZ_011",
+    "storeName": "广州某门店",
+    "currentMdmId": "10061450",
+    "history": [
+      {
+        "mdmId": "10061450",
+        "orgCode": "ORG_GZ_01",
+        "effectiveFrom": "2021-01-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": []
+  },
+  "STORE_CD_005": {
+    "storeCode": "STORE_CD_005",
+    "storeName": "成都某门店",
+    "currentMdmId": "10072580",
+    "history": [
+      {
+        "mdmId": "10072581",
+        "orgCode": "ORG_CD_OLD",
+        "effectiveFrom": "2020-01-01",
+        "effectiveTo": "2025-06-30"
+      },
+      {
+        "mdmId": "10072580",
+        "orgCode": "ORG_CD_NEW",
+        "effectiveFrom": "2025-07-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": [
+      {
+        "fromOrg": "ORG_CD_OLD",
+        "toOrg": "ORG_CD_NEW",
+        "fromMdmId": "10072581",
+        "toMdmId": "10072580",
+        "changedAt": "2025-07-01",
+        "reason": "门店组织合并"
+      }
+    ]
+  },
+  "STORE_BJ_018": {
+    "storeCode": "STORE_BJ_018",
+    "storeName": "北京某门店",
+    "currentMdmId": "10089910",
+    "history": [
+      {
+        "mdmId": "10089910",
+        "orgCode": "ORG_BJ_02",
+        "effectiveFrom": "2022-05-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": []
+  },
+  "STORE_XM_002": {
+    "storeCode": "STORE_XM_002",
+    "storeName": "厦门某门店",
+    "currentMdmId": "10095530",
+    "history": [
+      {
+        "mdmId": "10095530",
+        "orgCode": "ORG_XM_01",
+        "effectiveFrom": "2021-08-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": []
+  },
+  "STORE_WH_009": {
+    "storeCode": "STORE_WH_009",
+    "storeName": "武汉某门店",
+    "currentMdmId": "10103101",
+    "history": [
+      {
+        "mdmId": "10103100",
+        "orgCode": "ORG_WH_OLD",
+        "effectiveFrom": "2022-01-01",
+        "effectiveTo": "2026-02-28"
+      },
+      {
+        "mdmId": "10103101",
+        "orgCode": "ORG_WH_NEW",
+        "effectiveFrom": "2026-03-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": [
+      {
+        "fromOrg": "ORG_WH_OLD",
+        "toOrg": "ORG_WH_NEW",
+        "fromMdmId": "10103100",
+        "toMdmId": "10103101",
+        "changedAt": "2026-03-01",
+        "reason": "主数据归属重新分配"
+      }
+    ]
+  },
+  "STORE_NJ_006": {
+    "storeCode": "STORE_NJ_006",
+    "storeName": "南京某门店",
+    "currentMdmId": "10112020",
+    "history": [
+      {
+        "mdmId": "10112020",
+        "orgCode": "ORG_NJ_01",
+        "effectiveFrom": "2020-01-01",
+        "effectiveTo": null
+      }
+    ],
+    "orgChanges": []
+  }
+}

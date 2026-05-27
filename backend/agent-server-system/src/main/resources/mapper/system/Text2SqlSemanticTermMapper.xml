@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.efloow.agenthub.system.mapper.Text2SqlSemanticTermMapper">
+
+    <select id="listByConnection" resultType="com.efloow.agenthub.system.entity.Text2SqlSemanticTerm">
+        SELECT id, connection_id AS connectionId, term, term_type AS termType,
+               table_name AS tableName, column_name AS columnName,
+               formula, filter_condition AS filterCondition, priority,
+               status, remark, create_by AS createBy, create_time AS createTime,
+               update_by AS updateBy, update_time AS updateTime
+        FROM text2sql_semantic_term
+        WHERE status = 1
+          AND (connection_id = #{connectionId} OR connection_id IS NULL)
+        ORDER BY priority DESC
+    </select>
+
+    <select id="matchExact" resultType="com.efloow.agenthub.system.entity.Text2SqlSemanticTerm">
+        SELECT id, connection_id AS connectionId, term, term_type AS termType,
+               table_name AS tableName, column_name AS columnName,
+               formula, filter_condition AS filterCondition, priority,
+               status, remark, create_by AS createBy, create_time AS createTime,
+               update_by AS updateBy, update_time AS updateTime
+        FROM text2sql_semantic_term
+        WHERE status = 1
+          AND (connection_id = #{connectionId} OR connection_id IS NULL)
+          AND LOWER(term) = LOWER(#{term})
+        ORDER BY priority DESC
+    </select>
+
+</mapper>

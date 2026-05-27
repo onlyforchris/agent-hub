@@ -1,0 +1,24 @@
+---
+description: B 端主题规范 — 使用 efloow-b-end-theme Skill 与 ui-* 语义类，禁止散落品牌色 Tailwind
+globs: frontend/**/*
+alwaysApply: false
+---
+
+# 前端 B 端主题
+
+编辑 `frontend/` 下 UI 或样式时，**必须**遵循项目 Skill：
+
+- Skill：`.cursor/skills/efloow-b-end-theme/SKILL.md`
+- 详细映射：`.cursor/skills/efloow-b-end-theme/reference.md`
+- 文档：`frontend/docs/theme-skills.md`
+- 视觉参考：`frontend/docs/cssdemo.html`
+- 实现：`frontend/src/index.css`（`@theme` + `ui-*`）
+
+## 硬性要求
+
+1. 新样式优先加 Token / `ui-*` 到 `index.css`，再在 TSX 使用语义类。
+2. 禁止在业务组件硬编码品牌色（如 `bg-indigo-600`、`#4f46e5`、`#0B1120`）。
+3. 禁止从 `cssdemo.html` 复制长段 Tailwind 到 TSX。
+4. 手风琴用 `accordion-grid`，不用 JS 算高度。
+
+手动触发：在 Agent 输入 `/efloow-b-end-theme`。

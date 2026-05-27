@@ -1,0 +1,123 @@
+server:
+  port: 8066
+
+spring:
+  application:
+    name: efloow-agent-server
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5431/efloow_agent}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:efloow2026pg}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: SET timezone = 'Asia/Shanghai'
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6378}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      database: ${SPRING_DATA_REDIS_DATABASE:1}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+agent:
+  llm:
+    # Model provider config is read from sys_model_provider table at runtime.
+    # Configure providers via 管理后台 → 模型供应商.
+    # The seed data includes a DeepSeek entry — set api_key in the table to activate.
+    default-model: ${AGENT_LLM_MODEL:deepseek-v4-flash}
+    timeout-ms: 30000
+    encryption-secret: ${AGENT_LLM_ENCRYPTION_SECRET:efloow-model-key-2026}
+  text2sql:
+    embedding:
+      # keyword = 基于词袋的轻量向量化（零依赖，开发过渡方案）
+      # api    = 调用 OpenAI 兼容 /v1/embeddings 接口
+      # mock   = 随机向量（仅测试用，不可用于检索）
+      provider: ${TEXT2SQL_EMBEDDING_PROVIDER:keyword}
+      base-url: ${TEXT2SQL_EMBEDDING_BASE_URL:}
+      api-key: ${TEXT2SQL_EMBEDDING_API_KEY:}
+      model: ${TEXT2SQL_EMBEDDING_MODEL:text-embedding-3-small}
+      dimensions: 1024
+  auth:
+    jwt:
+      secret: ${AGENT_AUTH_JWT_SECRET:efloow-agent-hub-local-secret-change-me-2026}
+      expires-in-seconds: ${AGENT_AUTH_JWT_EXPIRES_IN_SECONDS:7200}
+      refresh-expires-in-seconds: ${AGENT_AUTH_JWT_REFRESH_EXPIRES_IN_SECONDS:604800}
+    captcha:
+      expires-in-seconds: ${AGENT_AUTH_CAPTCHA_EXPIRES_IN_SECONDS:300}
+  skill:
+    work-root: ${java.io.tmpdir}/efloow-skill-work
+    routing:
+      embedding-enabled: true
+      embedding-top-k: 5
+      embedding-min-score: 0.35
+      embedding-model-label: skill-routing
+    cli:
+      enabled: true
+      default-timeout-ms: 120000
+      max-stdout-bytes: 524288
+      sandbox: strict
+      allowed-commands:
+        - python
+        - python3
+        - pandoc
+        - pdftoppm
+        - pdftotext
+        - qpdf
+
+logging:
+  level:
+    com.efloow.agenthub: INFO
+    com.efloow.agenthub.application.llm: DEBUG
+    com.efloow.agenthub.infrastructure.llm: DEBUG
+    org.springframework: WARN
+    org.mybatis: WARN
+    org.apache: WARN
+    com.zaxxer.hikari: WARN
+    io.lettuce: WARN
+
+rbac:
+  security:
+    unregistered-resource-policy: ${RBAC_UNREGISTERED_RESOURCE_POLICY:DENY}
+    public-paths:
+      - /api/auth/captcha
+      - /api/auth/login
+      - /api/auth/refresh
+      - /actuator/health
+      - /v3/api-docs/**
+      - /swagger-ui.html
+      - /swagger-ui/**
+    authenticated-paths:
+      - /api/auth/me
+      - /api/auth/logout
+      - /api/rbac/menus/routes
+      - /api/agent/**
+      - /api/skills/catalog
+      - /api/notifications/**
+      - /api/todos/**
+

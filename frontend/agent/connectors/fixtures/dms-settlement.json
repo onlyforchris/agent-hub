@@ -1,0 +1,122 @@
+{
+  "TCH202604160001": [
+    {
+      "settlementNo": "TCH202604160001",
+      "orderNo": "ORD2026040001",
+      "mdmId": "10021045",
+      "amount": 4488.0,
+      "postingStatus": "已过账",
+      "billingStatus": "已开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_NB_001"
+    }
+  ],
+  "TCH202604160002": [
+    {
+      "settlementNo": "TCH202604160002",
+      "orderNo": "ORD2026040002",
+      "mdmId": "10031120",
+      "amount": 5000.0,
+      "postingStatus": "已过账",
+      "billingStatus": "已开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_HZ_007"
+    }
+  ],
+  "TCH202604160003": [
+    {
+      "settlementNo": "TCH202604160003",
+      "orderNo": "ORD2026040003",
+      "mdmId": "10044220",
+      "amount": 3200.0,
+      "postingStatus": "过账中",
+      "billingStatus": "未开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_SH_034"
+    }
+  ],
+  "TCH202604160004": [
+    {
+      "settlementNo": "TCH202604160004",
+      "orderNo": "ORD2026040004",
+      "mdmId": "10053310",
+      "amount": 6800.0,
+      "postingStatus": "已过账",
+      "billingStatus": "已开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_SZ_021"
+    }
+  ],
+  "TCH202604160005": [
+    {
+      "settlementNo": "TCH202604160005",
+      "orderNo": "ORD2026040005",
+      "mdmId": "10061450",
+      "amount": 12000.0,
+      "postingStatus": "过账中",
+      "billingStatus": "未开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_GZ_011"
+    }
+  ],
+  "TCH202604160006": [
+    {
+      "settlementNo": "TCH202604160006",
+      "orderNo": "ORD2026040006",
+      "mdmId": "10072580",
+      "amount": 9600.0,
+      "postingStatus": "已过账",
+      "billingStatus": "已开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_CD_005"
+    }
+  ],
+  "TCH202604160007": [
+    {
+      "settlementNo": "TCH202604160007",
+      "orderNo": "ORD2026040007",
+      "mdmId": "10089910",
+      "amount": 3000.0,
+      "postingStatus": "已过账",
+      "billingStatus": "已开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_BJ_018"
+    }
+  ],
+  "TCH202604160008": [
+    {
+      "settlementNo": "TCH202604160008",
+      "orderNo": "ORD2026040008",
+      "mdmId": "10095530",
+      "amount": 28000.0,
+      "postingStatus": "过账中",
+      "billingStatus": "未开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_XM_002"
+    }
+  ],
+  "TCH202604160009": [
+    {
+      "settlementNo": "TCH202604160009",
+      "orderNo": "ORD2026040009",
+      "mdmId": "10103101",
+      "amount": 7700.0,
+      "postingStatus": "已过账",
+      "billingStatus": "已开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_WH_009"
+    }
+  ],
+  "TCH202604160010": [
+    {
+      "settlementNo": "TCH202604160010",
+      "orderNo": "ORD2026030010",
+      "mdmId": "10112020",
+      "amount": 4200.0,
+      "postingStatus": "已过账",
+      "billingStatus": "已开票",
+      "cancelStatus": "正常",
+      "storeCode": "STORE_NJ_006"
+    }
+  ]
+}

@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "id": "revenue_quality",
+    "name": "收入回款对账治理",
+    "description": "覆盖差异接入、规则归因、AI 报告、人工复核、处置回写和案例沉淀。",
+    "category": "data_quality",
+    "status": "published",
+    "publishedVersionId": "ver-1-0-0",
+    "latestVersionId": "ver-1-0-0",
+    "owner": "财务共享中心",
+    "updatedAt": "2026-05-19T16:56:52.632Z",
+    "createdAt": "2026-05-19T16:56:52.632Z"
+  },
+  "versions": [
+    {
+      "id": "ver-1-0-0",
+      "templateId": "revenue_quality",
+      "version": "v1.0.0",
+      "changelog": "首期对账治理 DAG 模板",
+      "graph": {
+        "nodes": [
+          {
+            "id": "intake",
+            "kind": "INPUT",
+            "position": {
+              "x": 48,
+              "y": 48
+            },
+            "data": {
+              "title": "差异发现",
+              "desc": "帆软差异清单、月结批次、API 推送",
+              "meta": "diff_batch"
+            }
+          },
+          {
+            "id": "profile",
+            "kind": "PROFILE",
+            "position": {
+              "x": 48,
+              "y": 228
+            },
+            "data": {
+              "title": "对账治理",
+              "desc": "字段完整性、类型、空值、主键重复",
+              "meta": "quality_gate"
+            }
+          },
+          {
+            "id": "standard",
+            "kind": "TRANSFORM",
+            "position": {
+              "x": 48,
+              "y": 408
+            },
+            "data": {
+              "title": "标准化映射",
+              "desc": "MDM、组织、客户、结算单口径统一",
+              "meta": "mapping"
+            }
+          },
+          {
+            "id": "evidence",
+            "kind": "JOIN",
+            "position": {
+              "x": 48,
+              "y": 588
+            },
+            "data": {
+              "title": "证据汇聚",
+              "desc": "DMS / SAP / 接口日志证据合并",
+              "meta": "evidence_pack"
+            }
+          },
+          {
+            "id": "rules",
+            "kind": "RULE",
+            "position": {
+              "x": 48,
+              "y": 768
+            },
+            "data": {
+              "title": "规则归因",
+              "desc": "金额翻倍、状态异常、回传失败",
+              "meta": "rule_engine"
+            }
+          },
+          {
+            "id": "report",
+            "kind": "MODEL",
+            "position": {
+              "x": 48,
+              "y": 948
+            },
+            "data": {
+              "title": "AI 报告",
+              "desc": "脱敏证据摘要生成归因报告",
+              "meta": "model_gateway"
+            }
+          },
+          {
+            "id": "review",
+            "kind": "REVIEW",
+            "position": {
+              "x": 48,
+              "y": 1128
+            },
+            "data": {
+              "title": "人工确认",
+              "desc": "财务、DMS、SAP 责任角色复核",
+              "meta": "review_route"
+            }
+          },
+          {
+            "id": "writeback",
+            "kind": "ACTION",
+            "position": {
+              "x": 48,
+              "y": 1308
+            },
+            "data": {
+              "title": "处置回写",
+              "desc": "结论、责任系统、处理状态回写",
+              "meta": "writeback"
+            }
+          },
+          {
+            "id": "learn",
+            "kind": "LEARN",
+            "position": {
+              "x": 48,
+              "y": 1488
+            },
+            "data": {
+              "title": "规则沉淀",
+              "desc": "沉淀案例、调优规则和知识库",
+              "meta": "case_library"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "id": "e-intake-profile",
+            "source": "intake",
+            "target": "profile",
+            "sourceHandle": "out-bottom",
+            "targetHandle": "in-top"
+          },
+          {
+            "id": "e-profile-standard",
+            "source": "profile",
+            "target": "standard",
+            "sourceHandle": "out-bottom",
+            "targetHandle": "in-top"
+          },
+          {
+            "id": "e-standard-evidence",
+            "source": "standard",
+            "target": "evidence",
+            "sourceHandle": "out-bottom",
+            "targetHandle": "in-top"
+          },
+          {
+            "id": "e-evidence-rules",
+            "source": "evidence",
+            "target": "rules",
+            "sourceHandle": "out-bottom",
+            "targetHandle": "in-top"
+          },
+          {
+            "id": "e-rules-report",
+            "source": "rules",
+            "target": "report",
+            "sourceHandle": "out-bottom",
+            "targetHandle": "in-top"
+          },
+          {
+            "id": "e-report-review",
+            "source": "report",
+            "target": "review",
+            "sourceHandle": "out-bottom",
+            "targetHandle": "in-top"
+          },
+          {
+            "id": "e-review-writeback",
+            "source": "review",
+            "target": "writeback",
+            "sourceHandle": "out-bottom",
+            "targetHandle": "in-top"
+          },
+          {
+            "id": "e-writeback-learn",
+            "source": "writeback",
+            "target": "learn",
+            "sourceHandle": "out-bottom",
+            "targetHandle": "in-top"
+          }
+        ],
+        "viewport": {
+          "x": 0,
+          "y": 0,
+          "zoom": 0.85
+        }
+      },
+      "createdAt": "2026-05-19T16:56:52.632Z",
+      "createdBy": "系统预设",
+      "publishedAt": "2026-05-19T16:56:52.632Z"
+    }
+  ],
+  "draftVersionId": "ver-1-0-0"
+}

@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.efloow.agenthub.system.mapper.RbacMapper">
+
+    <sql id="DepartmentColumns">
+        id,
+        parent_id as "parentId",
+        dept_code as "deptCode",
+        dept_name as "deptName",
+        sort_order as "sortOrder",
+        leader,
+        phone,
+        status,
+        remark,
+        create_by as "createBy",
+        create_time as "createTime",
+        update_by as "updateBy",
+        update_time as "updateTime"
+    </sql>
+
+    <sql id="MenuColumns">
+        id,
+        parent_id as "parentId",
+        menu_name as "menuName",
+        path,
+        component,
+        icon,
+        sort_order as "sortOrder",
+        status,
+        permission_code as "permissionCode",
+        remark,
+        create_by as "createBy",
+        create_time as "createTime",
+        update_by as "updateBy",
+        update_time as "updateTime"
+    </sql>
+
+    <sql id="ResourceColumns">
+        id,
+        menu_id as "menuId",
+        resource_name as "resourceName",
+        resource_code as "resourceCode",
+        method,
+        path,
+        resource_type as "resourceType",
+        match_type as "matchType",
+        priority,
+        status,
+        remark,
+        create_by as "createBy",
+        create_time as "createTime",
+        update_by as "updateBy",
+        update_time as "updateTime"
+    </sql>
+
+    <select id="selectPermissionsByUserId" resultType="string">
+        select distinct r.resource_code
+        from sys_user_role ur
+        join sys_role_resource rr on rr.role_id = ur.role_id
+        join sys_resource r on r.id = rr.resource_id
+        join sys_role role on role.id = ur.role_id and role.status = 1
+        where ur.user_id = #{userId}
+          and ur.status = 1
+          and rr.status = 1
+          and r.status = 1
+    </select>
+
+    <select id="selectAllResourceCodes" resultType="string">
+        select resource_code
+        from sys_resource
+        where status = 1
+        order by resource_code asc
+    </select>
+
+    <select id="selectMenuIdsByUserId" resultType="string">
+        select distinct rm.menu_id
+        from sys_user_role ur
+        join sys_role_menu rm on rm.role_id = ur.role_id
+        join sys_role role on role.id = ur.role_id and role.status = 1
+        where ur.user_id = #{userId}
+          and ur.status = 1
+          and rm.status = 1
+    </select>
+
+    <select id="selectAllMenuIds" resultType="string">
+        select id
+        from sys_menu
+        where status = 1
+        order by sort_order asc, create_time asc
+    </select>
+
+    <select id="selectAgentIdsByUserId" resultType="string">
+        select distinct ra.agent_id
+        from sys_user_role ur
+        join sys_role_agent ra on ra.role_id = ur.role_id
+        join sys_role role on role.id = ur.role_id and role.status = 1
+        where ur.user_id = #{userId}
+          and ur.status = 1
+          and ra.status = 1
+    </select>
+
+    <select id="selectAllAgentIds" resultType="string">
+        select id
+        from agent
+        where status = 1
+        order by agent_code asc
+    </select>
+
+    <select id="selectMaxDataScopeByUserId" resultType="string">
+        select coalesce(
+            (
+                select ur.data_scope
+                from sys_user_role ur
+                join sys_role role on role.id = ur.role_id and role.status = 1
+                where ur.user_id = #{userId}
+                  and ur.status = 1
+                order by case ur.data_scope
+                    when 'ALL' then 4
+                    when 'DEPT_AND_SUB' then 3
+                    when 'DEPT' then 2
+                    else 1
+                end desc
+                limit 1
+            ),
+            'SELF'
+        )
+    </select>
+
+    <select id="selectPermissionByMethodAndPath" resultType="string">
+        select resource_code
+        from sys_resource
+        where status = 1
+          and method = #{method}
+          and path = #{path}
+          and match_type = 'EXACT'
+        limit 1
+    </select>
+
+    <select id="selectAntResourcesByMethod" resultType="map">
+        select
+            id,
+            resource_code as "resourceCode",
+            path,
+            match_type as "matchType",
+            priority
+        from sys_resource
+        where status = 1
+          and method = #{method}
+          and match_type = 'ANT'
+        order by priority desc, create_time asc
+    </select>
+
+    <select id="existsSuperAdminRoleByUserId" resultType="boolean">
+        select exists(
+            select 1
+            from sys_user_role ur
+            join sys_role role on role.id = ur.role_id
+            where ur.user_id = #{userId}
+              and ur.status = 1
+              and role.status = 1
+              and role.role_type = 'SUPER_ADMIN'
+        )
+    </select>
+
+    <select id="selectUserIdsByRoleId" resultType="string">
+        select user_id from sys_user_role where role_id = #{roleId} and status = 1
+    </select>
+
+    <select id="selectDepartments" resultType="map">
+        select <include refid="DepartmentColumns"/>
+        from sys_department
+        where status = 1
+        order by sort_order asc, create_time asc
+    </select>
+
+    <select id="selectMenus" resultType="map">
+        select <include refid="MenuColumns"/>
+        from sys_menu
+        where status = 1
+        order by sort_order asc, create_time asc
+    </select>
+
+    <select id="selectMenusByUserId" resultType="map">
+        select distinct
+            m.id,
+            m.parent_id as "parentId",
+            m.menu_name as "menuName",
+            m.path,
+            m.component,
+            m.icon,
+            m.sort_order as "sortOrder",
+            m.status,
+            m.permission_code as "permissionCode",
+            m.remark,
+            m.create_by as "createBy",
+            m.create_time as "createTime",
+            m.update_by as "updateBy",
+            m.update_time as "updateTime"
+        from sys_menu m
+        join sys_role_menu rm on rm.menu_id = m.id
+        join sys_user_role ur on ur.role_id = rm.role_id
+        where ur.user_id = #{userId}
+          and ur.status = 1
+          and rm.status = 1
+          and m.status = 1
+        order by m.sort_order asc
+    </select>
+
+    <select id="selectResources" resultType="map">
+        select <include refid="ResourceColumns"/>
+        from sys_resource
+        where status = 1
+        order by resource_code asc
+    </select>
+
+    <select id="selectRoles" resultType="map">
+        select
+            id,
+            role_code as "roleCode",
+            role_name as "roleName",
+            role_type as "roleType",
+            status,
+            sort_order as "sortOrder",
+            remark,
+            create_by as "createBy",
+            create_time as "createTime",
+            update_by as "updateBy",
+            update_time as "updateTime"
+        from sys_role
+        where status = 1
+        order by sort_order asc, create_time asc
+    </select>
+
+    <select id="selectUsers" resultType="map">
+        select
+            u.id,
+            u.username,
+            u.nickname,
+            u.department_id as "departmentId",
+            d.dept_name as "departmentName",
+            u.email,
+            u.phone,
+            u.status,
+            u.remark,
+            coalesce((
+                select ur.data_scope
+                from sys_user_role ur
+                join sys_role role on role.id = ur.role_id and role.status = 1
+                where ur.user_id = u.id
+                  and ur.status = 1
+                order by case ur.data_scope
+                    when 'ALL' then 4
+                    when 'DEPT_AND_SUB' then 3
+                    when 'DEPT' then 2
+                    else 1
+                end desc
+                limit 1
+            ), 'SELF') as "dataScope",
+            u.last_login_time as "lastLoginTime",
+            u.last_login_ip as "lastLoginIp",
+            u.create_by as "createBy",
+            u.create_time as "createTime",
+            u.update_by as "updateBy",
+            u.update_time as "updateTime"
+        from sys_user u
+        left join sys_department d on d.id = u.department_id
+        where u.status = 1
+        order by u.create_time asc
+    </select>
+
+    <select id="selectAgents" resultType="map">
+        select
+            id,
+            agent_code as "agentCode",
+            agent_name as "agentName",
+            description,
+            permission_level as "permissionLevel",
+            icon,
+            status,
+            remark,
+            create_by as "createBy",
+            create_time as "createTime",
+            update_by as "updateBy",
+            update_time as "updateTime"
+        from agent
+        where status = 1
+        order by create_time asc
+    </select>
+
+    <select id="selectAgentsByUserId" resultType="map">
+        select distinct
+            a.id,
+            a.agent_code as "agentCode",
+            a.agent_name as "agentName",
+            a.description,
+            a.permission_level as "permissionLevel",
+            a.icon,
+            a.status,
+            a.remark,
+            a.create_by as "createBy",
+            a.create_time as "createTime",
+            a.update_by as "updateBy",
+            a.update_time as "updateTime"
+        from agent a
+        join sys_role_agent ra on ra.agent_id = a.id
+        join sys_user_role ur on ur.role_id = ra.role_id
+        where ur.user_id = #{userId}
+          and ur.status = 1
+          and ra.status = 1
+          and a.status = 1
+        order by a.create_time asc
+    </select>
+
+    <insert id="insertDepartment">
+        insert into sys_department (
+            id, parent_id, dept_code, dept_name, sort_order, status, leader, phone, remark, create_by, update_by
+        ) values (
+            #{id},
+            #{body.parentId},
+            #{body.deptCode},
+            #{body.deptName},
+            #{body.sortOrder},
+            #{body.status},
+            #{body.leader},
+            #{body.phone},
+            #{body.remark},
+            #{body.createBy},
+            #{body.createBy}
+        )
+    </insert>
+
+    <update id="updateDepartment">
+        update sys_department
+        <set>
+            <if test="body.parentId != null">parent_id = #{body.parentId},</if>
+            <if test="body.deptCode != null">dept_code = #{body.deptCode},</if>
+            <if test="body.deptName != null">dept_name = #{body.deptName},</if>
+            <if test="body.sortOrder != null">sort_order = #{body.sortOrder},</if>
+            <if test="body.status != null">status = #{body.status},</if>
+            <if test="body.leader != null">leader = #{body.leader},</if>
+            <if test="body.phone != null">phone = #{body.phone},</if>
+            <if test="body.remark != null">remark = #{body.remark},</if>
+            <if test="body.updateBy != null">update_by = #{body.updateBy},</if>
+            update_time = LOCALTIMESTAMP(6)
+        </set>
+        where id = #{id}
+    </update>
+
+    <insert id="insertMenu">
+        insert into sys_menu (
+            id, parent_id, menu_name, path, component, icon, sort_order, status, permission_code, remark, create_by, update_by
+        ) values (
+            #{id}, #{body.parentId}, #{body.menuName}, #{body.path}, #{body.component}, #{body.icon},
+            #{body.sortOrder}, #{body.status}, #{body.permissionCode}, #{body.remark}, #{body.createBy}, #{body.createBy}
+        )
+    </insert>
+
+    <update id="updateMenu">
+        update sys_menu
+        <set>
+            <if test="body.parentId != null">parent_id = #{body.parentId},</if>
+            <if test="body.menuName != null">menu_name = #{body.menuName},</if>
+            <if test="body.path != null">path = #{body.path},</if>
+            <if test="body.component != null">component = #{body.component},</if>
+            <if test="body.icon != null">icon = #{body.icon},</if>
+            <if test="body.sortOrder != null">sort_order = #{body.sortOrder},</if>
+            <if test="body.status != null">status = #{body.status},</if>
+            <if test="body.permissionCode != null">permission_code = #{body.permissionCode},</if>
+            <if test="body.remark != null">remark = #{body.remark},</if>
+            <if test="body.updateBy != null">update_by = #{body.updateBy},</if>
+            update_time = LOCALTIMESTAMP(6)
+        </set>
+        where id = #{id}
+    </update>
+
+    <insert id="insertResource">
+        insert into sys_resource (
+            id, menu_id, resource_name, resource_code, method, path, resource_type, match_type, priority, status, remark, create_by, update_by
+        ) values (
+            #{id}, #{body.menuId}, #{body.resourceName}, #{body.resourceCode}, #{body.method}, #{body.path},
+            #{body.resourceType}, #{body.matchType}, #{body.priority}, #{body.status}, #{body.remark}, #{body.createBy}, #{body.createBy}
+        )
+    </insert>
+
+    <update id="updateResource">
+        update sys_resource
+        <set>
+            <if test="body.menuId != null">menu_id = #{body.menuId},</if>
+            <if test="body.resourceName != null">resource_name = #{body.resourceName},</if>
+            <if test="body.resourceCode != null">resource_code = #{body.resourceCode},</if>
+            <if test="body.method != null">method = #{body.method},</if>
+            <if test="body.path != null">path = #{body.path},</if>
+            <if test="body.resourceType != null">resource_type = #{body.resourceType},</if>
+            <if test="body.matchType != null">match_type = #{body.matchType},</if>
+            <if test="body.priority != null">priority = #{body.priority},</if>
+            <if test="body.status != null">status = #{body.status},</if>
+            <if test="body.remark != null">remark = #{body.remark},</if>
+            <if test="body.updateBy != null">update_by = #{body.updateBy},</if>
+            update_time = LOCALTIMESTAMP(6)
+        </set>
+        where id = #{id}
+    </update>
+
+    <insert id="insertRole">
+        insert into sys_role (id, role_code, role_name, role_type, status, sort_order, remark, create_by, update_by)
+        values (#{id}, #{body.roleCode}, #{body.roleName}, #{body.roleType}, #{body.status}, #{body.sortOrder}, #{body.remark}, #{body.createBy}, #{body.createBy})
+    </insert>
+
+    <update id="updateRole">
+        update sys_role
+        <set>
+            <if test="body.roleCode != null">role_code = #{body.roleCode},</if>
+            <if test="body.roleName != null">role_name = #{body.roleName},</if>
+            <if test="body.roleType != null">role_type = #{body.roleType},</if>
+            <if test="body.status != null">status = #{body.status},</if>
+            <if test="body.sortOrder != null">sort_order = #{body.sortOrder},</if>
+            <if test="body.remark != null">remark = #{body.remark},</if>
+            <if test="body.updateBy != null">update_by = #{body.updateBy},</if>
+            update_time = LOCALTIMESTAMP(6)
+        </set>
+        where id = #{id}
+    </update>
+
+    <insert id="insertUser">
+        insert into sys_user (
+            id, username, password_hash, nickname, department_id, email, phone, status, remark, create_by, update_by
+        ) values (
+            #{id}, #{body.username}, #{passwordHash}, #{body.nickname}, #{body.departmentId},
+            #{body.email}, #{body.phone}, #{body.status}, #{body.remark}, #{body.createBy}, #{body.createBy}
+        )
+    </insert>
+
+    <update id="updateUser">
+        update sys_user
+        <set>
+            <if test="body.username != null">username = #{body.username},</if>
+            <if test="body.nickname != null">nickname = #{body.nickname},</if>
+            <if test="body.departmentId != null">department_id = #{body.departmentId},</if>
+            <if test="body.email != null">email = #{body.email},</if>
+            <if test="body.phone != null">phone = #{body.phone},</if>
+            <if test="body.status != null">status = #{body.status},</if>
+            <if test="body.remark != null">remark = #{body.remark},</if>
+            <if test="body.updateBy != null">update_by = #{body.updateBy},</if>
+            update_time = LOCALTIMESTAMP(6)
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="updateUserPassword">
+        update sys_user
+        set password_hash = #{passwordHash}, update_time = LOCALTIMESTAMP(6)
+        where id = #{id}
+    </update>
+
+    <insert id="insertAgent">
+        insert into agent (id, agent_code, agent_name, description, permission_level, icon, status, remark, create_by, update_by)
+        values (
+            #{id}, #{body.agentCode}, #{body.agentName}, #{body.description},
+            #{body.permissionLevel}, #{body.icon}, #{body.status}, #{body.remark},
+            #{body.createBy}, #{body.createBy}
+        )
+    </insert>
+
+    <update id="updateAgent">
+        update agent
+        <set>
+            <if test="body.agentCode != null">agent_code = #{body.agentCode},</if>
+            <if test="body.agentName != null">agent_name = #{body.agentName},</if>
+            <if test="body.description != null">description = #{body.description},</if>
+            <if test="body.permissionLevel != null">permission_level = #{body.permissionLevel},</if>
+            <if test="body.icon != null">icon = #{body.icon},</if>
+            <if test="body.status != null">status = #{body.status},</if>
+            <if test="body.remark != null">remark = #{body.remark},</if>
+            <if test="body.updateBy != null">update_by = #{body.updateBy},</if>
+            update_time = LOCALTIMESTAMP(6)
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 逻辑删除: UPDATE status = 2 -->
+    <update id="deleteDepartment">
+        update sys_department set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6) where id = #{id}
+    </update>
+
+    <update id="deleteMenu">
+        update sys_menu set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6) where id = #{id}
+    </update>
+
+    <update id="deleteResource">
+        update sys_resource set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6) where id = #{id}
+    </update>
+
+    <update id="deleteRole">
+        update sys_role set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6) where id = #{id}
+    </update>
+
+    <update id="deleteUser">
+        update sys_user set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6) where id = #{id}
+    </update>
+
+    <update id="deleteAgent">
+        update agent set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6) where id = #{id}
+    </update>
+
+    <update id="deleteUserRoles">
+        update sys_user_role set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6)
+        where user_id = #{userId} and status = 1
+    </update>
+
+    <insert id="insertUserRole">
+        insert into sys_user_role (id, user_id, role_id, create_by, update_by)
+        values (#{id}, #{userId}, #{roleId}, #{createBy}, #{createBy})
+    </insert>
+
+    <update id="updateUserRoleDataScope">
+        update sys_user_role
+        set data_scope = #{dataScope}, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6)
+        where user_id = #{userId}
+          and role_id = #{roleId}
+          and status = 1
+    </update>
+
+    <select id="selectRoleIdsByUserId" resultType="string">
+        select role_id from sys_user_role where user_id = #{userId} and status = 1
+    </select>
+
+    <update id="deleteRoleMenus">
+        update sys_role_menu set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6)
+        where role_id = #{roleId} and status = 1
+    </update>
+
+    <insert id="insertRoleMenu">
+        insert into sys_role_menu (id, role_id, menu_id, create_by, update_by)
+        values (#{id}, #{roleId}, #{menuId}, #{createBy}, #{createBy})
+    </insert>
+
+    <select id="selectMenuIdsByRoleId" resultType="string">
+        select menu_id from sys_role_menu where role_id = #{roleId} and status = 1
+    </select>
+
+    <update id="deleteRoleResources">
+        update sys_role_resource set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6)
+        where role_id = #{roleId} and status = 1
+    </update>
+
+    <insert id="insertRoleResource">
+        insert into sys_role_resource (id, role_id, resource_id, create_by, update_by)
+        values (#{id}, #{roleId}, #{resourceId}, #{createBy}, #{createBy})
+    </insert>
+
+    <select id="selectResourceIdsByRoleId" resultType="string">
+        select resource_id from sys_role_resource where role_id = #{roleId} and status = 1
+    </select>
+
+    <update id="deleteRoleAgents">
+        update sys_role_agent set status = 2, update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6)
+        where role_id = #{roleId} and status = 1
+    </update>
+
+    <insert id="insertRoleAgent">
+        insert into sys_role_agent (id, role_id, agent_id, create_by, update_by)
+        values (#{id}, #{roleId}, #{agentId}, #{createBy}, #{createBy})
+    </insert>
+
+    <select id="selectAgentIdsByRoleId" resultType="string">
+        select agent_id from sys_role_agent where role_id = #{roleId} and status = 1
+    </select>
+
+    <select id="selectUserIdsByDepartmentId" resultType="string">
+        select id from sys_user where department_id = #{departmentId} and status = 1
+    </select>
+
+    <select id="selectAllActiveUserIds" resultType="string">
+        select id from sys_user where status = 1
+    </select>
+</mapper>

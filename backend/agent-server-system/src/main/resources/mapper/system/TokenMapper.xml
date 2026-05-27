@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.efloow.agenthub.system.mapper.TokenMapper">
+
+    <insert id="insertRefreshToken">
+        insert into sys_refresh_token (id, token_id, user_id, expire_time, create_by, update_by)
+        values (#{id}, #{tokenId}, #{userId}, #{expireTime}, #{createBy}, #{createBy})
+        on conflict (token_id) do nothing
+    </insert>
+
+    <update id="revokeRefreshToken">
+        update sys_refresh_token
+        set revoked = true, revoked_at = LOCALTIMESTAMP(6), update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6)
+        where token_id = #{tokenId}
+          and user_id = #{userId}
+          and revoked = false
+          and status = 1
+    </update>
+
+    <update id="revokeAllRefreshTokensByUserId">
+        update sys_refresh_token
+        set revoked = true, revoked_at = LOCALTIMESTAMP(6), update_by = #{updateBy}, update_time = LOCALTIMESTAMP(6)
+        where user_id = #{userId}
+          and revoked = false
+          and status = 1
+    </update>
+
+    <select id="existsActiveRefreshToken" resultType="boolean">
+        select exists(
+            select 1
+            from sys_refresh_token
+            where token_id = #{tokenId}
+              and status = 1
+              and revoked = false
+              and expire_time > LOCALTIMESTAMP(6)
+        )
+    </select>
+
+    <insert id="insertTokenBlacklist">
+        insert into sys_token_blacklist (id, token_id, user_id, token_type, expire_time, invalidated_by, create_by, update_by)
+        values (#{id}, #{tokenId}, #{userId}, #{tokenType}, #{expireTime}, #{invalidatedBy}, #{createBy}, #{createBy})
+        on conflict (token_id) do nothing
+    </insert>
+
+    <select id="existsBlacklistedToken" resultType="boolean">
+        select exists(
+            select 1
+            from sys_token_blacklist
+            where token_id = #{tokenId}
+              and status = 1
+              and expire_time > LOCALTIMESTAMP(6)
+        )
+    </select>
+</mapper>

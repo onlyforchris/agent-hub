@@ -1,0 +1,6 @@
+{
+  "name": "财务对账AI质检平台",
+  "description": "基于Agent中台架构的财务差异智能归因POC demo，支持MDM ID异常、金额翻倍等典型场景的自动核对与根因分析。",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

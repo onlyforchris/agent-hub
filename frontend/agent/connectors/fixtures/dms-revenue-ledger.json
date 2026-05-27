@@ -1,0 +1,160 @@
+{
+  "TCH202604160001": [
+    {
+      "ledgerId": "L20260416_001",
+      "settlementNo": "TCH202604160001",
+      "mdmId": "10021045",
+      "amount": 4488.0,
+      "storeCode": "STORE_NB_001",
+      "batchId": "B2026041601",
+      "insertedAt": "2026-04-16T10:23:45+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    },
+    {
+      "ledgerId": "L20260416_002",
+      "settlementNo": "TCH202604160001",
+      "mdmId": "10021046",
+      "amount": 4488.0,
+      "storeCode": "STORE_NB_001",
+      "batchId": "B2026041601",
+      "insertedAt": "2026-04-16T10:23:47+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    }
+  ],
+  "TCH202604160002": [
+    {
+      "ledgerId": "L20260416_011",
+      "settlementNo": "TCH202604160002",
+      "mdmId": "10031120",
+      "amount": 5000.0,
+      "storeCode": "STORE_HZ_007",
+      "batchId": "B2026041601",
+      "insertedAt": "2026-04-16T10:30:12+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    },
+    {
+      "ledgerId": "L20260416_012",
+      "settlementNo": "TCH202604160002",
+      "mdmId": "10031120",
+      "amount": 5000.0,
+      "storeCode": "STORE_HZ_007",
+      "batchId": "B2026041601",
+      "insertedAt": "2026-04-16T10:30:14+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    }
+  ],
+  "TCH202604160003": [],
+  "TCH202604160004": [
+    {
+      "ledgerId": "L20260416_041",
+      "settlementNo": "TCH202604160004",
+      "mdmId": "10053310",
+      "amount": 6800.0,
+      "storeCode": "STORE_SZ_021",
+      "batchId": "B2026041602",
+      "insertedAt": "2026-04-16T11:08:21+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    },
+    {
+      "ledgerId": "L20260416_042",
+      "settlementNo": "TCH202604160004",
+      "mdmId": "10053310",
+      "amount": 6800.0,
+      "storeCode": "STORE_SZ_021",
+      "batchId": "B2026041602",
+      "insertedAt": "2026-04-16T11:08:22+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    }
+  ],
+  "TCH202604160005": [
+    {
+      "ledgerId": "L20260416_051",
+      "settlementNo": "TCH202604160005",
+      "mdmId": "10061450",
+      "amount": 12000.0,
+      "storeCode": "STORE_GZ_011",
+      "batchId": "B2026041603",
+      "insertedAt": "2026-04-16T12:11:08+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    }
+  ],
+  "TCH202604160006": [
+    {
+      "ledgerId": "L20260416_061",
+      "settlementNo": "TCH202604160006",
+      "mdmId": "10072580",
+      "amount": 9600.0,
+      "storeCode": "STORE_CD_005",
+      "batchId": "B2026041604",
+      "insertedAt": "2026-04-16T12:30:01+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    }
+  ],
+  "TCH202604160007": [
+    {
+      "ledgerId": "L20260416_071",
+      "settlementNo": "TCH202604160007",
+      "mdmId": "10089910",
+      "amount": 3000.0,
+      "storeCode": "STORE_BJ_018",
+      "batchId": "B2026041605",
+      "insertedAt": "2026-04-16T13:05:42+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    },
+    {
+      "ledgerId": "L20260416_072",
+      "settlementNo": "TCH202604160007",
+      "mdmId": "10089910",
+      "amount": 3000.0,
+      "storeCode": "STORE_BJ_018",
+      "batchId": "B2026041605",
+      "insertedAt": "2026-04-16T13:05:43+08:00",
+      "sourceTaskId": "TASK_LEDGER_RETRY"
+    }
+  ],
+  "TCH202604160008": [],
+  "TCH202604160009": [
+    {
+      "ledgerId": "L20260416_091",
+      "settlementNo": "TCH202604160009",
+      "mdmId": "10103100",
+      "amount": 7700.0,
+      "storeCode": "STORE_WH_009",
+      "batchId": "B2026041606",
+      "insertedAt": "2026-04-16T14:21:01+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    },
+    {
+      "ledgerId": "L20260416_092",
+      "settlementNo": "TCH202604160009",
+      "mdmId": "10103101",
+      "amount": 7700.0,
+      "storeCode": "STORE_WH_009",
+      "batchId": "B2026041606",
+      "insertedAt": "2026-04-16T14:21:03+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    }
+  ],
+  "TCH202604160010": [
+    {
+      "ledgerId": "L20260331_101",
+      "settlementNo": "TCH202604160010",
+      "mdmId": "10112020",
+      "amount": 4200.0,
+      "storeCode": "STORE_NJ_006",
+      "batchId": "B2026033101",
+      "insertedAt": "2026-03-31T19:15:00+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    },
+    {
+      "ledgerId": "L20260331_102",
+      "settlementNo": "TCH202604160010",
+      "mdmId": "10112020",
+      "amount": 4200.0,
+      "storeCode": "STORE_NJ_006",
+      "batchId": "B2026033101",
+      "insertedAt": "2026-03-31T19:15:02+08:00",
+      "sourceTaskId": "TASK_LEDGER_NIGHTLY"
+    }
+  ]
+}

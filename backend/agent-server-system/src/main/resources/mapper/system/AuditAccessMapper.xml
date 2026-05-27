@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.efloow.agenthub.system.mapper.AuditAccessMapper">
+
+    <insert id="insertAccess">
+        insert into sys_audit_access (
+            id,
+            trace_id,
+            user_id,
+            username,
+            request_method,
+            request_path,
+            resource_code,
+            access_result,
+            deny_reason,
+            client_ip,
+            user_agent,
+            request_time,
+            response_time_ms,
+            status,
+            remark,
+            create_by
+        ) values (
+            #{id},
+            #{traceId},
+            #{userId},
+            #{username},
+            #{requestMethod},
+            #{requestPath},
+            #{resourceCode},
+            #{accessResult},
+            #{denyReason},
+            #{clientIp},
+            #{userAgent},
+            #{requestTime},
+            #{responseTimeMs},
+            #{status},
+            #{remark},
+            #{createBy}
+        )
+    </insert>
+
+    <insert id="insertDetail">
+        insert into sys_audit_access_detail (id, audit_id, request_body, request_params, response_body, operation_summary, status, remark, create_by)
+        values (#{id}, #{auditId}, #{requestBody}, #{requestParams}, #{responseBody}, #{operationSummary}, #{status}, #{remark}, #{createBy})
+    </insert>
+
+    <select id="selectRecent" resultType="map">
+        select
+            a.id,
+            a.trace_id as "traceId",
+            a.user_id as "userId",
+            a.username,
+            a.request_method as "requestMethod",
+            a.request_path as "requestPath",
+            a.resource_code as "resourceCode",
+            a.access_result as "accessResult",
+            a.deny_reason as "denyReason",
+            a.client_ip as "clientIp",
+            a.request_time as "requestTime",
+            a.response_time_ms as "responseTimeMs",
+            a.status,
+            a.remark,
+            a.create_by as "createBy",
+            a.create_time as "createTime",
+            d.operation_summary as "operationSummary",
+            d.request_params as "requestParams",
+            d.request_body as "requestBody",
+            d.response_body as "responseBody"
+        from sys_audit_access a
+        left join sys_audit_access_detail d on d.audit_id = a.id
+        order by a.request_time desc
+        limit #{limit}
+    </select>
+</mapper>
