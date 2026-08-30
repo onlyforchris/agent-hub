@@ -4,16 +4,17 @@ Local-first enterprise Agent platform powered by DeepSeek Harness.
 
 Agent Hub is being rebuilt as a Python control plane with a browser UI, SQLite storage, and a native MCP surface. The first release is intentionally small: it proves the deployment shape and the connection boundary before adding orchestration.
 
+![Agent Hub local workspace overview](docs/agent-hub-overview.png)
+
 ## Run locally
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```powershell
-uv sync
 uv run agent-hub
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Local data is stored in `%USERPROFILE%\.agent-hub\agent-hub.db` by default.
+`uv` creates the environment and installs locked dependencies on the first run. Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Local data is stored in `%USERPROFILE%\.agent-hub\agent-hub.db` by default.
 
 ## Connect DeepSeek Harness
 
