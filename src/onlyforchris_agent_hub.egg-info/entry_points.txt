@@ -1,2 +1,0 @@
-[console_scripts]
-agent-hub = agent_hub.app:main
