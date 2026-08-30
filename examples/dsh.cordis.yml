@@ -1,0 +1,8 @@
+- id: agent-hub-mcp
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: agenthub
+    transport: streamable-http
+    url: http://127.0.0.1:8765/mcp
+    toolCallTimeoutMs: 30000
+

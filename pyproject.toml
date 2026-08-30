@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onlyforchris-agent-hub"
+version = "0.1.0"
+description = "Local-first enterprise Agent platform powered by DeepSeek Harness"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Chris" }]
+dependencies = [
+  "mcp>=2.1.1,<3",
+  "uvicorn>=0.35,<1",
+]
+
+[project.scripts]
+agent-hub = "agent_hub.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
