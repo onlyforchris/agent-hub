@@ -61,7 +61,7 @@ http://127.0.0.1:8765/mcp
 
 这是本地基础，不是生产多租户服务：默认绑定 `127.0.0.1`，无鉴权。除非显式设置 `AGENT_HUB_ALLOW_REMOTE=1`，否则拒绝远程绑定。
 
-之前的 Java 原型与历史见 [`agent-hub-java-legacy`](https://github.com/onlyforchris/agent-hub-java-legacy)（已归档）。编排与多租户能力在后续计划中。
+之前的 Java 原型与历史已归档清理。编排与多租户能力在后续计划中。
 
 ## 检查
 
